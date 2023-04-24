@@ -1,0 +1,5 @@
+#!/bin/sh
+mkdir -p tests
+gcc -g -DMAIN_COMMON_LOG src/common/log.c -o tests/log
+gcc -g -DMAIN_COMMON_ERRNAME src/common/errname.c src/common/log.c -o tests/errname
+g++ -g -std=c++17 -DMAIN_NETIF -Isrc -Wno-error=deprecated src/common/errname.c src/common/log.c src/netif/netif.cpp src/netif/netifs.cpp -o tests/netif

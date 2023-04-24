@@ -1,0 +1,8 @@
+.Language=English,English
+.PluginContents=Netconfig panel
+
+@Contents
+$ #Netconfig panel#
+    The Netconfig panel list network interfaces and
+tuning mac mtu ip ip6 by F4 key.
+

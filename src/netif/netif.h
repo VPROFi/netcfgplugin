@@ -5,6 +5,8 @@
 #include <map>
 #include <stdint.h>
 
+#define MAX_INTERFACE_NAME_LEN 16
+
 struct IpAddressInfo {
 	unsigned int ifa_flags;
 	std::wstring ip;
@@ -74,6 +76,10 @@ struct NetInterface {
 	bool AddIp6(const wchar_t * newip, const wchar_t * mask);
 	bool ChangeIp(const wchar_t * oldip, const wchar_t * newip, const wchar_t * mask, const wchar_t * bcip);
 	bool ChangeIp6(const wchar_t * oldip, const wchar_t * newip, const wchar_t * mask);
+
+	bool TcpDumpStart(const wchar_t * file, bool promisc);
+	void TcpDumpStop(void);
+
 };
 
 #endif /* __NETIF_H__ */

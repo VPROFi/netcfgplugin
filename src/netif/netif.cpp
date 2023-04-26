@@ -311,3 +311,23 @@ bool NetInterface::ChangeIp6(const wchar_t * oldip, const wchar_t * newip, const
 		}
 	return false;
 }
+
+bool NetInterface::TcpDumpStart(const wchar_t * file, bool promisc)
+{
+	LOG_INFO("file: %S promisc: %s\n", file, promisc ? "true":"false");
+	SetPromisc(promisc);
+	char buffer[MAX_CMD_LEN];
+	if( snprintf(buffer, MAX_CMD_LEN, TCPDUMP_CMD, name.c_str(), file) > 0 )
+		if( RootExec(buffer) == 0 )
+			return true;
+	return false;
+}
+
+void NetInterface::TcpDumpStop(void)
+{
+	LOG_INFO("\n");
+	char buffer[MAX_CMD_LEN];
+	if( snprintf(buffer, MAX_CMD_LEN, TCPDUMPKILL_CMD, name.c_str()) > 0 )
+		RootExec(buffer);
+	return;
+}

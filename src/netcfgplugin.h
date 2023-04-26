@@ -23,6 +23,9 @@ class NetCfgPlugin {
 
 		const wchar_t * DublicateFileSizeString(unsigned long long value);
 		const wchar_t * DublicateCountString(unsigned long long value);
+		void SetCapFilePath(HANDLE hDlg, int item, const wchar_t * capname);
+
+		friend LONG_PTR WINAPI SettingDialogProc(HANDLE hDlg, int Msg, int Param1, LONG_PTR Param2);
 
 	public:
 

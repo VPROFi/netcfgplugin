@@ -10,6 +10,8 @@ enum {
 	MPanelTitle,
 
 	MF4,
+	MF5,
+	MF6,
 
 	MIfConfigTitle,
 	MIfConfigName,

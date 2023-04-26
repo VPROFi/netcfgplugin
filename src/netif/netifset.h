@@ -40,6 +40,10 @@
 #define ADDIP6_CMD     "ip address add %S/%S dev %S"
 #define CHANGEIP6_CMD "ip address del %S/%S dev %S && ip address add %S/%u dev %S"
 
+//#define TCPDUMP_CMD "tcpdump --interface=%S --buffer-size=8192 -w %S -C 10000000 -Z root -W 10 &"
+#define TCPDUMP_CMD "tcpdump --interface=%S --buffer-size=8192 -w %S &"
+#define TCPDUMPKILL_CMD "pkill -f '^tcpdump --interface=%S'"
+
 #else
 
 #endif

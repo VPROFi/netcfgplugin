@@ -159,10 +159,6 @@ int NetCfgPlugin::GetFindData(struct PluginPanelItem **pPanelItem,int *pItemsNum
 			_tmp += ip;
 		}
 
-
-	
-
-
 		CustomColumnData[CColumnDataIpIndex] = wcsdup(_tmp.c_str());
 
 		for( const auto& [mac, macinfo] : net_if->mac ) {
@@ -284,9 +280,176 @@ enum {
 	WinFooterCancelIndex,
 };
 
+enum {
+	WinTcpCaptionIndex,
+	WinTcpInterfaceTextIndex,
+	WinTcpInterfaceButtonIndex,
+	WinTcpPromiscCheckboxIndex,
+	WinTcpFileTextIndex,
+	WinTcpFileEditIndex,
+	WinTcpSeparatorIndex,
+	WinTcpOkButtonIndex,
+	WinTcpCancelButtonIndex,
+	WinTcpDumpMaxIndex
+};
+
+void NetCfgPlugin::SetCapFilePath(HANDLE hDlg, int item, const wchar_t * capname)
+{
+	int nameSize = psi.Control(PANEL_PASSIVE, FCTL_GETPANELDIR, 0, (LONG_PTR)0);
+	wchar_t * path = new wchar_t[nameSize];
+	psi.Control(PANEL_PASSIVE, FCTL_GETPANELDIR, nameSize, (LONG_PTR)path);
+	std::wstring _file(path);
+	delete[] path;
+	_file += L"/";
+	_file += capname;
+	_file += L".cap";
+	psi.SendDlgMessage(hDlg, DM_SETTEXTPTR, item, (LONG_PTR)_file.c_str());
+	return;
+}
+
+LONG_PTR WINAPI SettingDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2)
+{
+	static NetCfgPlugin * netCfg = 0;
+	if( msg == DN_INITDIALOG ) {
+		netCfg = (NetCfgPlugin *)param2;
+	}
+
+	switch(msg){
+		case DN_BTNCLICK:
+		switch (param1){
+			case WinTcpInterfaceButtonIndex:
+			{
+				int if_count = netCfg->nifs->size(), index = 0;
+				FarMenuItem *menuElements = new FarMenuItem[if_count];
+				memset(menuElements, 0, sizeof(FarMenuItem)*if_count);
+
+				for( const auto& [name, net_if] : *(netCfg->nifs) ) {
+					menuElements[index].Text = name.c_str();
+					index++;
+				}
+				menuElements[0].Selected = 1;
+				index = netCfg->psi.Menu(netCfg->psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
+						 L"Select interface:", 0, L"hrd", nullptr, nullptr, menuElements, if_count);
+				if( index >= 0 && index < if_count ) {
+					netCfg->psi.SendDlgMessage(hDlg, DM_SETTEXTPTR, WinTcpInterfaceButtonIndex, (LONG_PTR)menuElements[index].Text);
+					netCfg->SetCapFilePath(hDlg, WinTcpFileEditIndex, menuElements[index].Text);
+				}
+				return true;
+			};
+		};
+		break;
+	};
+
+	LOG_INFO("MSG: %u\n", msg);
+
+	assert( netCfg != 0 );
+	auto res = netCfg->psi.DefDlgProc(hDlg, msg, param1, param2);
+	if( msg == DM_CLOSE )
+		netCfg = 0;
+	return res;
+}
+
 int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 {
 	bool change = false;
+
+	if( controlState == 0 && key == VK_F6 ) {
+		int if_count = nifs->size(), index = 0;
+		FarMenuItem *menuElements = new FarMenuItem[if_count];
+		memset(menuElements, 0, sizeof(FarMenuItem)*if_count);
+
+		for( const auto& [name, net_if] : *nifs ) {
+			menuElements[index].Text = name.c_str();
+			index++;
+		}
+		menuElements[0].Selected = 1;
+		index = psi.Menu(psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
+						 L"Stop tcpdump on interface:", 0, L"hrd", nullptr, nullptr, menuElements, if_count);
+		if( index >= 0 && index < if_count ) {
+			auto net_if = nifs->find(menuElements[index].Text);
+			if( net_if != nifs->end() ) {
+					LOG_INFO("stop tcpdump interface %S\n", menuElements[index].Text);
+					net_if->second->TcpDumpStop();
+			}
+		}
+		return true;
+	}
+
+	if( controlState == 0 && key == VK_F5 ) {
+		struct PanelInfo pi;
+		psi.Control(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, (LONG_PTR)&pi);
+		PluginPanelItem* ppi = (PluginPanelItem*)malloc(psi.Control(PANEL_ACTIVE, FCTL_GETPANELITEM, pi.CurrentItem, 0));
+		if( ppi ) {
+			psi.Control(PANEL_ACTIVE, FCTL_GETPANELITEM, pi.CurrentItem, (LONG_PTR)ppi);
+			LOG_INFO("ppi->FindData.lpwszFileName %S\n", ppi->FindData.lpwszFileName);
+		}
+		do {
+
+			if( FSF.LStricmp(ppi->FindData.lpwszFileName, L"..") == 0 )
+				break;
+
+			if( !(ppi->Flags & PPIF_USERDATA) || !ppi->UserData )
+				break;
+
+			assert( ((PluginUserData *)ppi->UserData)->size == sizeof(PluginUserData) );
+			NetInterface * net_if = ((PluginUserData *)ppi->UserData)->net_if;
+			assert( net_if->size == sizeof(NetInterface) );
+			static struct FarDialogItem fdi_template[] = {
+  //        Type        X1   Y1       X2              Y2          Focus    union    Flags             DefaultButton    PtrData             MaxLen
+  /* 0*/ {DI_DOUBLEBOX, 3,   1,  DIALOG_WIDTH-4,       0,           0,      {0},       0,                    0,      L"Tcpdump:",                    0},
+  /* 1*/ {DI_TEXT,      5,   2,       0,               0,           0,      {0},       0,                    0,      L"Interface:",                  0},
+  /* 2*/ {DI_BUTTON,    16,  2,      37,               2,           0,      {0},       0,                    0,      L"",            MAX_INTERFACE_NAME_LEN},
+  /* 3*/ {DI_CHECKBOX,  62,  2,       0,               0,           0,      {0},       0,                    0,      L"PROMISC",                     0},
+  /* 4*/ {DI_TEXT,      5,   4,       0,               0,           0,      {0},       0,                    0,      L"File:",                       0},
+  /* 5*/ {DI_EDIT,     11,   4,      72,               3,           0,      {0},       0,                    0,      L"",                            0},
+  /* 6*/ {DI_TEXT,      5,   5,       0,               0,           0,      {0}, DIF_BOXCOLOR|DIF_SEPARATOR, 0,      L"",                            0},
+  /* 7*/ {DI_BUTTON,    0,   6,       0,               0,           0,      {0}, DIF_CENTERGROUP,            0,      GetMsg(MOk),                    0},
+  /* 8*/ {DI_BUTTON,    0,   6,       0,               0,           0,      {0}, DIF_CENTERGROUP,            0,      GetMsg(MCancel),                0}
+                };
+			unsigned int fdi_cnt = ARRAYSIZE(fdi_template);
+			struct FarDialogItem * fdi = (struct FarDialogItem *)malloc(fdi_cnt * sizeof(FarDialogItem));
+			if( !fdi )
+				break;
+
+			memmove(fdi, fdi_template, sizeof(fdi_template));
+
+			fdi[WinTcpInterfaceButtonIndex].PtrData = ppi->FindData.lpwszFileName;
+
+			fdi[WinTcpCaptionIndex].Y2 = ARRAYSIZE(fdi_template)-2;
+			fdi[WinTcpOkButtonIndex].DefaultButton = 1;
+			fdi[WinTcpOkButtonIndex].Focus = 1;
+
+			HANDLE hDlg = psi.DialogInit(psi.ModuleNumber, -1, -1, DIALOG_WIDTH, ARRAYSIZE(fdi_template), L"Tcpdump", fdi, fdi_cnt, 0, 0, SettingDialogProc, (LONG_PTR)this);
+			if (hDlg == INVALID_HANDLE_VALUE) {
+				LOG_ERROR("DialogInit()\n");
+				free(fdi);
+				break;
+			}
+
+			SetCapFilePath(hDlg, WinTcpFileEditIndex, ppi->FindData.lpwszFileName);
+
+			auto res = psi.DialogRun(hDlg);
+			LOG_INFO("0. psi.DialogRun(hDlg) ret %u %u\n", res, WinTcpOkButtonIndex);
+			if( res == WinTcpOkButtonIndex /*(fdi_cnt-2)*/ ) {
+					const wchar_t interface[MAX_INTERFACE_NAME_LEN+1] = {0};
+					psi.SendDlgMessage(hDlg, DM_GETTEXTPTR, WinTcpInterfaceButtonIndex, (ULONG_PTR)interface);
+					auto net_if = nifs->find(interface);
+					LOG_INFO("tcpdump interface %S net_if != nifs->end() %s\n", interface, net_if != nifs->end() ? "true":"false");
+					if( net_if != nifs->end() ) {
+						net_if->second->TcpDumpStart((const wchar_t *)psi.SendDlgMessage(hDlg, DM_GETCONSTTEXTPTR, WinTcpFileEditIndex, 0),
+											bool(psi.SendDlgMessage(hDlg, DM_GETCHECK, WinTcpPromiscCheckboxIndex, 0)));
+					}
+			}
+
+			free(fdi);
+
+		} while(0);
+
+		if( ppi )
+			free(ppi);
+
+		return TRUE;
+	}
 
 	if( controlState == 0 && key == VK_F4 ) {
 
@@ -602,7 +765,8 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 		HANDLE hDlg = psi.DialogInit(psi.ModuleNumber, -1, -1, DIALOG_WIDTH, Y, L"Config", fdi, fdi_cnt, 0, 0, NULL, 0);
 		if (hDlg == INVALID_HANDLE_VALUE) {
 			LOG_ERROR("DialogInit()\n");
-			return FALSE;
+			free((void *)fdi);
+			break;
 		}
 
 		if( psi.DialogRun(hDlg) == (fdi_cnt-2) ) {

@@ -15,8 +15,9 @@ class NetInterfaces {
 
 	public:
 		typedef std::map<std::wstring, NetInterface *>::const_iterator const_iterator;
-		const_iterator begin() const { return ifs.begin(); }
-		const_iterator end() const { return ifs.end(); }
+		const_iterator begin() const { return ifs.begin(); };
+		const_iterator end() const { return ifs.end(); };
+		const_iterator find(std::wstring name) const { return ifs.find(name); };
 		int size(void) const { return ifs.size(); };
 
 		NetInterfaces();

@@ -115,7 +115,7 @@ int NetInterfaces::Update(void)
 	}
 
 	for (ifa = ifa_base; ifa; ifa = ifa->ifa_next) {
-		if( !ifa->ifa_name )
+		if( !ifa->ifa_name || !ifa->ifa_addr )
 			continue;
 
 		NetInterface * net_if = Add(ifa->ifa_name);

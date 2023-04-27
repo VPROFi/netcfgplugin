@@ -18,6 +18,10 @@ common/errname.c
 common/log.c
 )
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_library(netcfg MODULE ${SOURCES})
 target_link_libraries(netcfg utils far2l)
 

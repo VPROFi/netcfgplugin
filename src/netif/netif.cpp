@@ -14,7 +14,6 @@ extern const char * LOG_FILE;
 extern "C" {
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/sysctl.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
@@ -26,12 +25,14 @@ extern "C" {
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 
+#include <linux/sysctl.h>
 #include <linux/sockios.h>
 #include <linux/ethtool.h>
 #include <unistd.h>
 
 #else
 
+#include <sys/sysctl.h>
 #include <net/route.h>
 #include <net/if_var.h>
 #include <net/if_dl.h>

@@ -8,7 +8,7 @@ If your want build inside other version far2l - put content ./src into ./far2l/n
 TODO:
 Apple not supported yet.
 
-![](img/tcpdump.png)
+![](img/macos.png)
 ![](img/tcpdumpstop.png)
 ![](img/main.png)
 ![](img/mainwide.png)

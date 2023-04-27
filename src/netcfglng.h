@@ -9,6 +9,7 @@ enum {
 	MFormatNetcfgPanel,
 	MPanelTitle,
 
+	MF3,
 	MF4,
 	MF5,
 	MF6,

@@ -148,8 +148,8 @@ int NetCfgPlugin::GetFindData(struct PluginPanelItem **pPanelItem,int *pItemsNum
 			pi->UserData = (DWORD_PTR)user_data;
 		}
 
-		const wchar_t ** CustomColumnData = (const wchar_t **)malloc(12*sizeof(const wchar_t *));
-		memset(CustomColumnData, 0, 12*sizeof(const wchar_t *));
+		const wchar_t ** CustomColumnData = (const wchar_t **)malloc(CColumnDataMaxIndex*sizeof(const wchar_t *));
+		memset(CustomColumnData, 0, CColumnDataMaxIndex*sizeof(const wchar_t *));
 
 
 		_tmp.clear();
@@ -160,6 +160,7 @@ int NetCfgPlugin::GetFindData(struct PluginPanelItem **pPanelItem,int *pItemsNum
 		}
 
 		CustomColumnData[CColumnDataIpIndex] = wcsdup(_tmp.c_str());
+
 
 		for( const auto& [mac, macinfo] : net_if->mac ) {
 			CustomColumnData[CColumnDataMacIndex] = wcsdup(mac.c_str());
@@ -352,6 +353,9 @@ LONG_PTR WINAPI SettingDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 {
 	bool change = false;
+
+	if( controlState == 0 && key == VK_F3 )
+		change = true;
 
 	if( controlState == 0 && key == VK_F6 ) {
 		int if_count = nifs->size(), index = 0;
@@ -564,7 +568,14 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 		/* 1 */ fdi[WinNameTextIndex].PtrData = GetMsg(MIfConfigName);
 
 		/* 2 */ fdi[WinIfNameEditIndex].PtrData = ppi->FindData.lpwszFileName;
+#if defined(__APPLE__)
+		fdi[WinIfNameEditIndex].Flags |= DIF_DISABLE;
 
+		fdi[WinMulticastFlagIndex].Flags |= DIF_DISABLE;
+		fdi[WinAllMulticastFlagIndex].Flags |= DIF_DISABLE;
+		fdi[WinNoARPFlagIndex].Flags |= DIF_DISABLE;
+		fdi[WinDebugFlagIndex].Flags |= DIF_DISABLE;
+#endif
 		/* 4 */ fdi[WinIfMACEditIndex].PtrData = ppi->CustomColumnData[CColumnDataMacIndex];
 
 		std::wstring permanent_mac(L"(");
@@ -753,8 +764,6 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 		Y++;
 		fdi[WinCaptionIndex].Y2 = Y;
 
-		//DIF_DISABLE
-
 		fdi[fdi_cnt-2].DefaultButton = 1;
 		fdi[2].Focus = 1;
 
@@ -773,7 +782,7 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 
 			// ifname
 			const wchar_t * ifname = (const wchar_t *)psi.SendDlgMessage(hDlg, DM_GETCONSTTEXTPTR, WinIfNameEditIndex, 0);
-			change = net_if->SetInterfaceName(ifname);
+			change |= net_if->SetInterfaceName(ifname);
 
 			// mac address
 			const wchar_t * mac = (const wchar_t *)psi.SendDlgMessage(hDlg, DM_GETCONSTTEXTPTR, WinIfMACEditIndex, 0);
@@ -804,11 +813,6 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 				LOG_INFO("%S: ip %S to %S\n", ifname, fdi_ip[WinIpEditIndex].PtrData, ip);
 				LOG_INFO("%S: ip mask %S to %S\n", ifname, fdi_ip[WinIpMaskEditIndex].PtrData, mask);
 				LOG_INFO("%S: ip broadcast %S to %S\n", ifname, fdi_ip[WinIpBroadcastEditIndex].PtrData, bcip);
-
-				if( *mask == 0 || *mask == 0x20 )
-					mask = L"255.255.255.0";
-				if( *bcip == 0 || *bcip == 0x20 )
-					bcip = L"255.255.255.255";
 
 				if( *ip == 0 ) {
 					if( *(const wchar_t *)fdi_ip[WinIpEditIndex].PtrData != 0 )
@@ -865,10 +869,12 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 		if( ppi )
 			free(ppi);
 
-		if( change ) {
-			nifs->Clear();
-			psi.Control(hPlugin, FCTL_UPDATEPANEL, TRUE, 0);
-		}
+	}
+
+	if( change ) {
+		nifs->Clear();
+		psi.Control(hPlugin, FCTL_UPDATEPANEL, TRUE, 0);
+		psi.Control(hPlugin, FCTL_REDRAWPANEL, 0, 0);
 		return TRUE;
 	}
 

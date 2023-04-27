@@ -9,7 +9,7 @@ extern const char * LOG_FILE;
 #define LOG_SOURCE_FILE "farconnect.cpp"
 
 // plugin
-static struct NetCfgPlugin * gNet = 0;
+static class NetCfgPlugin * gNet = 0;
 
 SHAREDSYMBOL int WINAPI _export ConfigureW(int itemNumber)
 {
@@ -40,7 +40,7 @@ SHAREDSYMBOL int WINAPI _export ProcessKeyW(HANDLE hPlugin,int key,unsigned int 
 
 SHAREDSYMBOL int WINAPI _export ProcessEventW(HANDLE hPlugin,int event,void *param)
 {
-	int res;
+	int res = FALSE;
 	static clock_t t;
 
 	switch(event) {

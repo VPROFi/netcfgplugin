@@ -23,64 +23,66 @@ extern const char * LOG_FILE;
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <netpacket/packet.h>
-#include <linux/sockios.h>
-#include <linux/if_link.h>
-#include <linux/ethtool.h>
-
 #else
-struct sockaddr_dl {
-	u_char	sdl_len;	/* Total length of sockaddr */
-	u_char	sdl_family;	/* AF_LINK */
-	u_short	sdl_index;	/* if != 0, system given index for interface */
-	u_char	sdl_type;	/* interface type */
-	u_char	sdl_nlen;	/* interface name length, no trailing 0 reqd. */
-	u_char	sdl_alen;	/* link level address length */
-	u_char	sdl_slen;	/* link layer selector length */
-	char	sdl_data[46];	/* minimum work area, can be larger;
-				   contains both if name and ll address */
-};
-#include <net/if_var.h>
-#include <net/if_types.h>
-#include <sys/sockio.h>
-
+#include <net/if_dl.h>
 #endif
 
-static const char * get_sockaddr_str(const struct sockaddr *sa, char *s, size_t maxlen)
+static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = false)
 {
+
+	const size_t maxlen = INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
+	char s[maxlen+1] = {0};
+	std::string addr;
+
 	if( !sa )
-		return "";
+		return std::wstring();
 
 	switch( sa->sa_family ) {
-
 	case AF_INET:
-		return inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, maxlen);
+	{
+		if( inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, maxlen) )
+			addr = s;
+		break;
+	}
 	case AF_INET6:
-            	return inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s, maxlen);
+	{
+		struct sockaddr_in6 sa6 = *((const struct sockaddr_in6 *)sa);
+		if( inet_ntop(AF_INET6, &sa6.sin6_addr, s, maxlen) ) {
+			if( ismask ) {
+				int bits = 0;
+				for( int i = 0; i < 16; i++ ) {
+					while (sa6.sin6_addr.s6_addr[i]) {
+						bits += sa6.sin6_addr.s6_addr[i] & 1;
+						sa6.sin6_addr.s6_addr[i] >>= 1;
+					}
+				}
+				if( snprintf(s, maxlen, "%u", bits) <= 0 )
+					s[0] = 0;
+			}
+			addr = s;
+		}
+		break;
+	}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	case AF_PACKET:
 	{
 		struct sockaddr_ll * sll = (struct sockaddr_ll *)sa;
-		if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", \
-			sll->sll_addr[0], sll->sll_addr[1], sll->sll_addr[2], \
-			sll->sll_addr[3], sll->sll_addr[4], sll->sll_addr[5]) > 0 )
-			return s;
-		break;
-	}
+		unsigned char * mac = (unsigned char *)sll->sll_addr;
 #else
 	case AF_LINK:
 	{
 		struct sockaddr_dl * sdl = (struct sockaddr_dl *)sa;
 		unsigned char * mac = (unsigned char *)sdl->sdl_data + sdl->sdl_nlen;
+#endif
 		if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]) > 0 )
-			return s;
+			addr = s;
 		break;
 	}
-#endif
 	default:
 		LOG_ERROR("unsupported sa_family: %u\n", sa->sa_family);
 		break;
-    }
-    return "";
+	}
+	return std::wstring(addr.begin(), addr.end());
 }
 
 NetInterface * NetInterfaces::Add(const char * name)
@@ -91,6 +93,7 @@ NetInterface * NetInterfaces::Add(const char * name)
 		ifs[_wname] = new NetInterface();
 		ifs[_wname]->size = sizeof(NetInterface);
 		ifs[_wname]->name = _wname;
+		ifs[_wname]->UpdateStats();
 	}
 	return ifs[_wname];
 }
@@ -121,16 +124,16 @@ int NetInterfaces::Update(void)
 
 		IpAddressInfo ip;
 		ip.ifa_flags = ifa->ifa_flags;
-		std::string _name(get_sockaddr_str((const struct sockaddr *)ifa->ifa_addr, s, sizeof(s)));
-		ip.ip = std::wstring(_name.begin(), _name.end());
-		_name = get_sockaddr_str((const struct sockaddr *)ifa->ifa_netmask, s, sizeof(s));
-		ip.netmask = std::wstring(_name.begin(), _name.end());
-		if( ifa->ifa_flags & IFF_BROADCAST ) {
-			_name = get_sockaddr_str((const struct sockaddr *)ifa->ifa_broadaddr, s, sizeof(s));
-			ip.broadcast = std::wstring(_name.begin(), _name.end());
-		} else if( ifa->ifa_flags & IFF_POINTOPOINT && ifa->ifa_dstaddr && ifa->ifa_dstaddr->sa_family != 0 ) {
-			_name = get_sockaddr_str((const struct sockaddr *)ifa->ifa_dstaddr, s, sizeof(s));
-			ip.point_to_point = std::wstring(_name.begin(), _name.end());
+		ip.ip = get_sockaddr_str((const struct sockaddr *)ifa->ifa_addr);
+		if( ifa->ifa_netmask )
+			ifa->ifa_netmask->sa_family = ifa->ifa_addr->sa_family;
+		ip.netmask = get_sockaddr_str((const struct sockaddr *)ifa->ifa_netmask, true);
+		if( ifa->ifa_flags & IFF_BROADCAST && ifa->ifa_broadaddr ) {
+			ifa->ifa_broadaddr->sa_family = ifa->ifa_addr->sa_family;
+			ip.broadcast = get_sockaddr_str((const struct sockaddr *)ifa->ifa_broadaddr);
+		} else if( ifa->ifa_flags & IFF_POINTOPOINT && ifa->ifa_dstaddr ) {
+			ifa->ifa_dstaddr->sa_family = ifa->ifa_addr->sa_family;
+			ip.point_to_point = get_sockaddr_str((const struct sockaddr *)ifa->ifa_dstaddr);
 		}
 
 		switch( ifa->ifa_addr->sa_family ) {
@@ -139,11 +142,6 @@ int NetInterfaces::Update(void)
 			net_if->ip[ip.ip] = ip;
 			break;
 		case AF_INET6:
-			
-			if( snprintf(s, sizeof(s), "%u", net_if->Ip6MaskToBits(get_sockaddr_str((const struct sockaddr *)ifa->ifa_netmask, s, sizeof(s)))) > 0 ) {
-				_name = s;
-				ip.netmask = std::wstring(_name.begin(), _name.end());
-			}
 			net_if->ip6[ip.ip] = ip;
 			break;
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
@@ -169,87 +167,6 @@ int NetInterfaces::Update(void)
 			break;
 		}
 
-		if( ifa->ifa_data ) {
-			#if !defined(__APPLE__) && !defined(__FreeBSD__)
-			struct rtnl_link_stats *stats = (struct rtnl_link_stats *)ifa->ifa_data;
-			net_if->recv_bytes = stats->rx_bytes;
-			net_if->send_bytes = stats->tx_bytes;
-			net_if->recv_packets = stats->rx_packets;
-			net_if->send_packets = stats->tx_packets;
-			net_if->recv_errors = stats->rx_errors;
-			net_if->send_errors = stats->tx_errors;
-			net_if->multicast = stats->multicast;
-			net_if->collisions = stats->collisions;
-
-			int isocket = socket(AF_INET, SOCK_DGRAM, 0);
-			if( isocket < 0 ) {
-				LOG_ERROR("socket(AF_INET, SOCK_STREAM, 0) ... error (%s) ", errorname(errno));
-				continue;
-			}
-
-			struct ifreq paifr;
-			memset(&paifr, 0, sizeof(paifr));
-			strncpy(paifr.ifr_name, ifa->ifa_name, sizeof(paifr.ifr_name));
-			if( ioctl(isocket, SIOCGIFMTU, &paifr) != -1 )
-				net_if->mtu = paifr.ifr_mtu;
-			else
-				LOG_ERROR("ioctl(SIOCGIFMTU) ... error (%s) ", errorname(errno));
-
-			struct ethtool_perm_addr * epa = (struct ethtool_perm_addr*)malloc(sizeof(struct ethtool_perm_addr) + IFHWADDRLEN);
-			if( epa ) {
-				epa->cmd = ETHTOOL_GPERMADDR;
-				epa->size = IFHWADDRLEN;
-				paifr.ifr_data = (caddr_t)epa;
-				if( ioctl(isocket, SIOCETHTOOL, &paifr) >= 0 ) {
-					if( snprintf(s, sizeof(s), "%02x:%02x:%02x:%02x:%02x:%02x", \
-							epa->data[0], epa->data[1], epa->data[2], \
-							epa->data[3],epa->data[4],epa->data[5]) > 0 ) {
-						//std::string _name(s);
-						_name = s;
-						net_if->permanent_mac = std::wstring(_name.begin(), _name.end());
-					}
-				} else
-					LOG_ERROR("ioctl(SIOCETHTOOL) ... error (%s) ", errorname(errno));
-
-				free(epa);
-			}
-			#else
-			struct if_data *stats = (struct if_data *)ifa->ifa_data;
-			net_if->mtu = stats->ifi_mtu;
-			// TODO: permanent mac on apple
-			net_if->recv_bytes = stats->ifi_ibytes;
-			net_if->send_bytes = stats->ifi_obytes;
-			net_if->recv_packets = stats->ifi_ipackets;
-			net_if->send_packets = stats->ifi_opackets;
-			net_if->recv_errors = stats->ifi_ierrors;
-			net_if->send_errors = stats->ifi_oerrors;
-			net_if->multicast = (uint64_t)stats->ifi_imcasts + stats->ifi_omcasts;
-			net_if->collisions = stats->ifi_collisions;
-
-
-			int isocket = socket(AF_INET, SOCK_DGRAM, 0);
-			if( isocket < 0 ) {
-				LOG_ERROR("socket(AF_INET, SOCK_STREAM, 0) ... error (%s) ", errorname(errno));
-				continue;
-			}
-
-			struct ifreq paifr;
-			memset(&paifr, 0, sizeof(paifr));
-			strncpy(paifr.ifr_name, ifa->ifa_name, sizeof(paifr.ifr_name));
-			if( ioctl(isocket, SIOCGIFEFLAGS, &paifr) != -1 ) {
-				//net_if->mtu = paifr.ifr_mtu;
-				LOG_INFO("paifr.ifr_eflags: 0x%08X\n", paifr.ifr_eflags);
-			} else
-				LOG_ERROR("ioctl(SIOCGIFEFLAGS) ... error (%s) ", errorname(errno));
-
-			if( ioctl(isocket, SIOCGIFXFLAGS, &paifr) != -1 ) {
-				//net_if->mtu = paifr.ifr_mtu;
-				LOG_INFO("paifr.ifr_xflags: 0x%08X\n", paifr.ifr_xflags);
-			} else
-				LOG_ERROR("ioctl(SIOCGIFXFLAGS) ... error (%s) ", errorname(errno));
-
-			#endif
-		}
 	}
 
 	freeifaddrs(ifa_base);
@@ -315,8 +232,8 @@ int main(int argc, char * argv[])
 		net.Log();
 		for( const auto& [name, net_if] : net ) {
 			LOG_INFO("%S:\n", net_if->name.c_str());
-			net_if->SetInterfaceName(L"eth0");
-			net_if->SetMac(L"88:88:88:88:88:88");
+			//net_if->SetInterfaceName(L"eth0");
+			//net_if->SetMac(L"88:88:88:88:88:88");
 			net.Log();
 			break;
 		}

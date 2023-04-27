@@ -123,11 +123,12 @@ void PluginCfg::CfgPanelModes(void)
 void PluginCfg::CfgKeyBarTitles(void)
 {
 	memset(&keyBar,0,sizeof(keyBar));
+	keyBar.Titles[3-1]=(TCHAR*)GetMsg(MF3);
 	keyBar.Titles[4-1]=(TCHAR*)GetMsg(MF4);
 	keyBar.Titles[5-1]=(TCHAR*)GetMsg(MF5);
 	keyBar.Titles[6-1]=(TCHAR*)GetMsg(MF6);
 
-	keyBar.Titles[1]=keyBar.Titles[2]=\
+	keyBar.Titles[1]=\
 	keyBar.Titles[6]=keyBar.Titles[7]=
 	keyBar.Titles[8]=keyBar.Titles[10]=keyBar.Titles[11]=(wchar_t *)L"";
 }
@@ -165,6 +166,7 @@ void PluginCfg::CgfPluginData(void)
 void PluginCfg::GetOpenPluginInfo(struct OpenPluginInfo *info)
 {
 	// reload string
+	keyBar.Titles[3-1]=(TCHAR*)GetMsg(MF3);
 	keyBar.Titles[4-1]=(TCHAR*)GetMsg(MF4);
 	keyBar.Titles[5-1]=(TCHAR*)GetMsg(MF5);
 	keyBar.Titles[6-1]=(TCHAR*)GetMsg(MF6);

@@ -80,6 +80,7 @@ struct NetInterface {
 	bool TcpDumpStart(const wchar_t * file, bool promisc);
 	void TcpDumpStop(void);
 
+	bool UpdateStats(void);
 };
 
 #endif /* __NETIF_H__ */

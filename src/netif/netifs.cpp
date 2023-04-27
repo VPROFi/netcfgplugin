@@ -238,7 +238,7 @@ int main(int argc, char * argv[])
 		net.Clear();
 	}
 	{
-		NetInterface net_if = NetInterface();
+		NetInterface net_if = NetInterface(L"lo");
 		char buf[sizeof("255.255.255.255")] = {0};
 		LOG_INFO("net_if.Ip6MaskToBits(\"ffff:ffff:ffff:ffff::\") = %u\n", net_if.Ip6MaskToBits("ffff:ffff:ffff:ffff::"));
 		LOG_INFO("net_if.Ip6MaskToBits(\"ffff:ffff:ffff:ffff:ffff::\") = %u\n", net_if.Ip6MaskToBits("ffff:ffff:ffff:ffff:ffff::"));

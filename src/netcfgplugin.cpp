@@ -358,23 +358,32 @@ int NetCfgPlugin::ProcessKey(HANDLE hPlugin,int key,unsigned int controlState)
 		change = true;
 
 	if( controlState == 0 && key == VK_F6 ) {
+
 		int if_count = nifs->size(), index = 0;
 		FarMenuItem *menuElements = new FarMenuItem[if_count];
 		memset(menuElements, 0, sizeof(FarMenuItem)*if_count);
 
 		for( const auto& [name, net_if] : *nifs ) {
-			menuElements[index].Text = name.c_str();
-			index++;
-		}
-		menuElements[0].Selected = 1;
-		index = psi.Menu(psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
-						 L"Stop tcpdump on interface:", 0, L"hrd", nullptr, nullptr, menuElements, if_count);
-		if( index >= 0 && index < if_count ) {
-			auto net_if = nifs->find(menuElements[index].Text);
-			if( net_if != nifs->end() ) {
-					LOG_INFO("stop tcpdump interface %S\n", menuElements[index].Text);
-					net_if->second->TcpDumpStop();
+			if( net_if->IsTcpdumpOn() ) {
+				menuElements[index].Text = name.c_str();
+				index++;
 			}
+		}
+
+		if( index ) {
+			menuElements[0].Selected = 1;
+			index = psi.Menu(psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
+							 L"Stop tcpdump on interface:", 0, L"hrd", nullptr, nullptr, menuElements, index);
+			if( index >= 0 && index < if_count ) {
+				auto net_if = nifs->find(menuElements[index].Text);
+				if( net_if != nifs->end() ) {
+						LOG_INFO("stop tcpdump interface %S\n", menuElements[index].Text);
+						net_if->second->TcpDumpStop();
+				}
+			}
+		} else {
+			const wchar_t * msgItems[] = { L"Tcpdump: ", GetMsg(MNoAnyTcpdumpTask), GetMsg(MOk) };
+			psi.Message( psi.ModuleNumber, 0, NULL, msgItems, ARRAYSIZE(msgItems), 1);
 		}
 		return true;
 	}

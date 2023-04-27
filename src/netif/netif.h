@@ -39,6 +39,12 @@ struct NetInterface {
 	uint64_t multicast;
 	uint64_t collisions;
 
+	bool tcpdumpOn;
+	bool IsTcpdumpOn() {return tcpdumpOn;};
+
+	explicit NetInterface(std::wstring name);
+	~NetInterface();
+
 	bool IsUp();
 	bool SetUp(bool on);
 	bool IsBroadcast();

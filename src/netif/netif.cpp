@@ -51,6 +51,18 @@ extern "C" {
 #define IFF_ECHO 0x40000
 #endif //IFF_ECHO
 
+NetInterface::NetInterface(std::wstring name):
+name(name),
+size(sizeof(NetInterface)),
+tcpdumpOn(false)
+{
+}
+
+NetInterface::~NetInterface()
+{
+}
+
+
 bool NetInterface::UpdateStats(void)
 {
 	std::string iface(name.begin(), name.end());
@@ -537,16 +549,17 @@ bool NetInterface::TcpDumpStart(const wchar_t * file, bool promisc)
 	SetPromisc(promisc);
 	char buffer[MAX_CMD_LEN];
 	if( snprintf(buffer, MAX_CMD_LEN, TCPDUMP_CMD, name.c_str(), file, name.c_str(), file) > 0 )
-		if( RootExec(buffer) == 0 )
-			return true;
-	return false;
+		tcpdumpOn = (RootExec(buffer) == 0);
+	return tcpdumpOn;
 }
 
 void NetInterface::TcpDumpStop(void)
 {
 	LOG_INFO("\n");
+	if( !tcpdumpOn )
+		return;
 	char buffer[MAX_CMD_LEN];
 	if( snprintf(buffer, MAX_CMD_LEN, TCPDUMPKILL_CMD, name.c_str()) > 0 )
-		RootExec(buffer);
+		tcpdumpOn = !(RootExec(buffer) == 0);
 	return;
 }

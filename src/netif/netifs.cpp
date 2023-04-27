@@ -90,9 +90,7 @@ NetInterface * NetInterfaces::Add(const char * name)
 	std::string _name(name);
 	std::wstring _wname(_name.begin(), _name.end());
 	if( ifs.find(_wname) == ifs.end() ) {
-		ifs[_wname] = new NetInterface();
-		ifs[_wname]->size = sizeof(NetInterface);
-		ifs[_wname]->name = _wname;
+		ifs[_wname] = new NetInterface(_wname);
 		ifs[_wname]->UpdateStats();
 	}
 	return ifs[_wname];

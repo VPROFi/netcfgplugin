@@ -24,6 +24,8 @@ enum {
 	MAddDisksMenu,
 	MAddToPluginsMenu,
 	MEnableLog,
+
+	MNoAnyTcpdumpTask,
 };
 
 #endif // NETCFGLNG_H

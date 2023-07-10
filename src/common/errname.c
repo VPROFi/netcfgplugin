@@ -4,6 +4,18 @@
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 #define	_EWOULDBLOCK	41	/* Operation would block */
 #define	_EDEADLOCK	58
+
+#ifndef ENOKEY
+#define	ENOKEY		126	/* Required key not available */
+#define	EKEYEXPIRED	127	/* Key has expired */
+#define	EKEYREVOKED	128	/* Key has been revoked */
+#define	EKEYREJECTED	129	/* Key was rejected by service */
+#define	EOWNERDEAD	130	/* Owner died */
+#define	ENOTRECOVERABLE	131	/* State not recoverable */
+#define ERFKILL		132	/* Operation not possible due to RF-kill */
+#define EHWPOISON	133	/* Memory page has hardware error */
+#endif
+
 #endif
 
 #define CASE_ERR(err) \
@@ -78,7 +90,9 @@ const char * errorname(int err)
 	CASE_ERR(ENOSYS		);/* Invalid system call number */
 	CASE_ERR(ENOTEMPTY	);/* Directory not empty */
 	CASE_ERR(ELOOP		);/* Too many symbolic links encountered */
+#if ELNRNG != 41
 	CASE_ERR(_EWOULDBLOCK	);/* Operation would block */
+#endif
 	CASE_ERR(ENOMSG		);/* No message of desired type */
 	CASE_ERR(EIDRM		);/* Identifier removed */
 	CASE_ERR(ECHRNG		);/* Channel number out of range */
@@ -163,6 +177,7 @@ const char * errorname(int err)
 	CASE_ERR(ENOMEDIUM	);/* No medium found */
 	CASE_ERR(EMEDIUMTYPE	);/* Wrong medium type */
 	CASE_ERR(ECANCELED	);/* Operation Canceled */
+#if EADDRNOTAVAIL != ENOKEY
 	CASE_ERR(ENOKEY		);/* Required key not available */
 	CASE_ERR(EKEYEXPIRED	);/* Key has expired */
 	CASE_ERR(EKEYREVOKED	);/* Key has been revoked */
@@ -171,6 +186,8 @@ const char * errorname(int err)
 	CASE_ERR(ENOTRECOVERABLE);/* State not recoverable */
 	CASE_ERR(ERFKILL	);/* Operation not possible due to RF-kill */
 	CASE_ERR(EHWPOISON	);/* Memory page has hardware error */
+#endif
+
 #else
 	CASE_ERR(EPERM          );/* Operation not permitted */
 	CASE_ERR(ENOENT         );/* No such file or directory */

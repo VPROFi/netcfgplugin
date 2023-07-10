@@ -11,16 +11,36 @@ set(SOURCES
 netcfgplugin.cpp
 netif/netif.cpp
 netif/netifs.cpp
+netroute/netroute.cpp
+netroute/netroutes.cpp
+fardialog.cpp
 netcfgplugin.cpp
+netcfginterfaces.cpp
+netcfgroutes.cpp
+farpanel.cpp
 plugincfg.cpp
 farconnect.cpp
 common/errname.c
 common/log.c
+common/netutils.c
+common/netlink.c
+common/sizestr.c
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# GCC 6+ has a warning for an ABI change due to a bug introduced in GCC 5:
+# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=77728. As we are building all of
+# drcachesim and not linking to other C++ code, we can just ignore it.
+if (ARM AND CMAKE_COMPILER_IS_GNUCC)
+    include(CheckCXXCompilerFlag)
+    CHECK_CXX_COMPILER_FLAG(-Wno-psabi GCC_HAS_NO_PSABI)
+    if (GCC_HAS_NO_PSABI)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi")
+    endif (GCC_HAS_NO_PSABI)
+endif ()
 
 add_library(netcfg MODULE ${SOURCES})
 target_link_libraries(netcfg utils far2l)

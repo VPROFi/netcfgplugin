@@ -2,17 +2,33 @@
 #define __NETCFGLNG_H__
 
 enum {
-	MDiskMenuString,
-	MPluginMenuString,
+	MNotUsed,
+	MEmptyString,
+	MInterfacesDiskMenuString,
+	MRoutesDiskMenuString,
 	MPluginConfigString,
 
 	MFormatNetcfgPanel,
-	MPanelTitle,
+	MPanelNetworkInterfacesTitle,
+	MPanelNetworkRoutesTitle,
+	MPanelNetworkRoutes6Title,
+	MPanelNetworkRoutesArpTitle,
+	MPanelNetworkMcRoutesTitle,
+	MPanelNetworkMcRoutes6Title,
 
-	MF3,
+	MF2,
 	MF4,
 	MF5,
 	MF6,
+	MF7,
+
+	MF6Routes,
+	MF6Routes6,
+	MF6RoutesArp,
+	MF6McRoutes,
+	MF6McRoutes6,
+	MF7Routes,
+	MF8Routes,
 
 	MIfConfigTitle,
 	MIfConfigName,
@@ -26,6 +42,10 @@ enum {
 	MEnableLog,
 
 	MNoAnyTcpdumpTask,
+
+	MConfigPluginSettings,
+	MMaxString
 };
+
 
 #endif // NETCFGLNG_H

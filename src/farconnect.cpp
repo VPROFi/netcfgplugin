@@ -72,7 +72,13 @@ SHAREDSYMBOL int WINAPI _export ProcessEventW(HANDLE hPlugin,int event,void *par
 		// Ctrl-Break is pressed
 		// Processing of this event is performed in separate thread,
 		// plugin must not use FAR service functions.
+#if INTPTR_MAX == INT32_MAX
 		LOG_INFO(":FE_BREAK CTRL_BREAK_EVENT %llu\n", param);
+#elif INTPTR_MAX == INT64_MAX
+		LOG_INFO(":FE_BREAK CTRL_BREAK_EVENT %lu\n", param);
+#else
+    #error "Environment not 32 or 64-bit."
+#endif
 		res = FALSE;
 		break;
 	case FE_COMMAND:
@@ -98,20 +104,20 @@ SHAREDSYMBOL int WINAPI _export ProcessEventW(HANDLE hPlugin,int event,void *par
 SHAREDSYMBOL void WINAPI _export FreeFindDataW(HANDLE hPlugin,struct PluginPanelItem *PanelItem,int ItemsNumber)
 {
 	LOG_INFO("hPlugin %p pPanelItem %p ItemsNumber %u\n", hPlugin, PanelItem, ItemsNumber);
-	gNet->FreeFindData(PanelItem, ItemsNumber);
+	gNet->FreeFindData(hPlugin, PanelItem, ItemsNumber);
 	return;
 }
 
 SHAREDSYMBOL int WINAPI _export GetFindDataW(HANDLE hPlugin,struct PluginPanelItem **pPanelItem,int *pItemsNumber,int OpMode)
 {
 	LOG_INFO("hPlugin %p OpMode %d *pPanelItem %p *pItemsNumber %u\n", hPlugin, OpMode, *pPanelItem, *pItemsNumber);
-	gNet->GetFindData(pPanelItem,pItemsNumber);
+	gNet->GetFindData(hPlugin, pPanelItem, pItemsNumber);
 	return TRUE;
 }
 
 SHAREDSYMBOL void WINAPI _export GetOpenPluginInfoW(HANDLE hPlugin, struct OpenPluginInfo *info)
 {
-	LOG_INFO("\n");
+	LOG_INFO("hPlugin %p info %p\n", hPlugin, info);
 	gNet->GetOpenPluginInfo(hPlugin, info);	
 }
 
@@ -119,16 +125,18 @@ SHAREDSYMBOL HANDLE WINAPI _export OpenPluginW(int openFrom, INT_PTR item)
 {
 	LOG_INFO("(int OpenFrom=%u,INT_PTR Item=%u)\n", openFrom, item);
 
-	if( !gNet->OpenPlugin(openFrom, item) )
+	return gNet->OpenPlugin(openFrom, item);
+
+/*	if( !gNet->OpenPlugin(openFrom, item) )
 		return INVALID_HANDLE_VALUE;
 
-	return (HANDLE)gNet;
+	LOG_INFO("(int OpenFrom=%u,INT_PTR Item=%u) return (HANDLE)gNet %p\n", openFrom, item, gNet);
+	return (HANDLE)gNet;*/
 }
 
 SHAREDSYMBOL void WINAPI _export ClosePluginW(HANDLE hPlugin)
 {
 	LOG_INFO("hPlugin 0x%p\n", hPlugin);
-
 	gNet->ClosePlugin(hPlugin);
 }
 

@@ -2,30 +2,41 @@
 #define __NETCFGPLUGIN_H__
 
 #include "netif/netifs.h"
+#include "netroute/netroutes.h"
 #include "plugincfg.h"
+#include "fardialog.h"
 
-#include <farplug-wide.h>
+#include "netcfgroutes.h"
+#include "netcfginterfaces.h"
+
+//#include <farplug-wide.h>
+
+
+struct PluginUserData {
+	DWORD size;
+	union {
+		NetInterface * net_if;
+		IpRouteInfo * inet;
+		ArpRouteInfo * arp;
+	} data;
+};
 
 class NetCfgPlugin {
 	private:
 		// Configuration
 		PluginCfg * cfg;
 
-		// Main functional
-		NetInterfaces * nifs;
+		// Panels
+		enum {
+			PanelNetworkInterfaces,
+			PanelNetworkRoutes,
+			PanelTypeMax
+		};
+		std::vector<std::shared_ptr<FarPanel>> panel;
 
 		// copy and assignment not allowed
 		NetCfgPlugin(const NetCfgPlugin&) = delete;
 		void operator=(const NetCfgPlugin&) = delete;
-
-		// internal api
-		const wchar_t * GetMsg(int msgId);
-
-		const wchar_t * DublicateFileSizeString(unsigned long long value);
-		const wchar_t * DublicateCountString(unsigned long long value);
-		void SetCapFilePath(HANDLE hDlg, int item, const wchar_t * capname);
-
-		friend LONG_PTR WINAPI SettingDialogProc(HANDLE hDlg, int Msg, int Param1, LONG_PTR Param2);
 
 	public:
 
@@ -35,12 +46,10 @@ class NetCfgPlugin {
 		// far2l backconnect
 		static struct PluginStartupInfo psi;
 		static struct FarStandardFunctions FSF;
-
-		void Log(void);
-		
+	
 		// far2l api
-		int GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber);
-		void FreeFindData(struct PluginPanelItem * PanelItem, int ItemsNumber);
+		int GetFindData(HANDLE hPlugin, struct PluginPanelItem **pPanelItem, int *pItemsNumber);
+		void FreeFindData(HANDLE hPlugin, struct PluginPanelItem * PanelItem, int ItemsNumber);
 		void GetPluginInfo(struct PluginInfo *info);
 
 		HANDLE OpenPlugin(int openFrom, INT_PTR item);

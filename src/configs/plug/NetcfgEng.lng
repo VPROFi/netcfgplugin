@@ -1,15 +1,32 @@
 .Language=English,English
 
+""
+""
+"Network Interfaces Configuration"
+"Network Routes Configuration"
 "Network config"
 "Network config"
-"Network config"
-"Network config"
-"Network config"
+"Network Interfaces Configuration"
+"Network Ipv4 Routes Configuration"
+"Network Ipv6 Routes Configuration"
+"Network arp Routes Configuration"
+"Network multicast Ipv4 Routes Configuration"
+"Network multicast Ipv6 Routes Configuration"
 
 "Refresh"
 "Change"
+
 "tcpdump"
 "stopdmp"
+"Routing"
+
+"Ipv4"
+"Ipv6"
+"Arp"
+"McIpv4"
+"McIpv6"
+"Ifaces"
+"Delete"
 
 "Interface: "
 "Name:"
@@ -23,3 +40,5 @@
 "Enable &log:"
 
 "No any tcpdump task"
+
+"Network config plugin settings"

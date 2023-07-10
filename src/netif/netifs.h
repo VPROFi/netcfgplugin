@@ -2,10 +2,16 @@
 #define __NETIFS_H__
 
 #include "netif.h"
+#include <vector>
 
 class NetInterfaces {
 	private:
 		std::map<std::wstring, NetInterface *> ifs;
+
+		bool UpdateByProcNet(void);
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		bool UpdateByNetlink(void);
+#endif
 
 		NetInterface * Add(const char * name);
 
@@ -23,7 +29,15 @@ class NetInterfaces {
 		NetInterfaces();
 		~NetInterfaces();
 
-		int Update(void);
+		// API
+		NetInterface * FindByIndex(uint32_t ifindex);
+
+		// tcpdump
+		std::vector<std::wstring> tcpdump;
+		bool TcpDumpStart(const wchar_t * iface, const wchar_t * file, bool promisc);
+		void TcpDumpStop(const wchar_t * iface);
+
+		bool Update(void);
 		void Log(void);
 		void Clear(void);
 };

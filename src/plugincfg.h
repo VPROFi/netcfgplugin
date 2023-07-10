@@ -2,6 +2,8 @@
 #define __CONFIGPLUGIN_H__
 
 #include <farplug-wide.h>
+#include <farkeys.h>
+#include <map>
 
 enum {
 	PanelModeBrief,
@@ -18,50 +20,85 @@ enum {
 };
 
 enum {
-	CColumnDataIpIndex,
-	CColumnDataMacIndex,
-	CColumnDataIp6Index,
-	CColumnDataMtuIndex,
-	CColumnDataRecvBytesIndex,
-	CColumnDataSendBytesIndex,
-	CColumnDataRecvPktsIndex,
-	CColumnDataSendPktsIndex,
-	CColumnDataRecvErrsIndex,
-	CColumnDataSendErrsIndex,
-	CColumnDataMulticastIndex,
-	CColumnDataCollisionsIndex,
-	CColumnDataPermanentMacIndex,
-	CColumnDataMaxIndex
+	InterfaceColumnIpIndex,
+	InterfaceColumnMacIndex,
+	InterfaceColumnIp6Index,
+	InterfaceColumnMtuIndex,
+	InterfaceColumnRecvBytesIndex,
+	InterfaceColumnSendBytesIndex,
+	InterfaceColumnRecvPktsIndex,
+	InterfaceColumnSendPktsIndex,
+	InterfaceColumnRecvErrsIndex,
+	InterfaceColumnSendErrsIndex,
+	InterfaceColumnMulticastIndex,
+	InterfaceColumnCollisionsIndex,
+	InterfaceColumnPermanentMacIndex,
+	InterfaceColumnMaxIndex
 };
+
+enum {
+	RoutesColumnViaIndex,
+	RoutesColumnDevIndex,
+	RoutesColumnPrefsrcIndex,
+	RoutesColumnTypeIndex,
+	RoutesColumnMetricIndex,
+	RoutesColumnDataMaxIndex
+};
+
+
+enum {
+	ArpRoutesColumnMacIndex,
+	ArpRoutesColumnDevIndex,
+	ArpRoutesColumnTypeIndex,
+	ArpRoutesColumnStateIndex,
+	ArpRoutesColumnMaxIndex
+};
+
+typedef struct {
+	const wchar_t * statusColumnTypes;
+	const wchar_t * statusColumnWidths;
+	const wchar_t * columnTypes[2];
+	const wchar_t * columnWidths[2];
+	const wchar_t * columnTitles[2][15];
+	uint32_t keyBarTitles[12];
+	uint32_t panelTitle;
+	uint32_t format;
+	uint32_t flags;
+} CfgDefaults;
+
+typedef enum {
+	IfcsPanelIndex,
+	RouteInetPanelIndex,
+	RouteInet6PanelIndex,
+	RouteArpPanelIndex,
+	RouteMcInetPanelIndex,
+	RouteMcInet6PanelIndex,
+	MaxPanelIndex
+} PanelIndex;
 
 class PluginCfg {
 
 	private:
-		const PluginStartupInfo * startupInfo;
+		static std::map<PanelIndex, CfgDefaults> def;
+		static size_t init;
 
-		struct PanelMode PanelModesArray[PanelModeMax];
-		struct KeyBarTitles keyBar;
-		struct OpenPluginInfo openInfo;
-
-		void CfgPanelModes(void);
-		void CfgKeyBarTitles(void);
+		const char * GetPanelName(PanelIndex index);
 
 		bool addToDisksMenu;
 		bool addToPluginsMenu;
 		bool logEnable;
 
 		const wchar_t * GetMsg(int msgId);
-
 	public:
-		explicit PluginCfg(const PluginStartupInfo * startupInfo);
+		explicit PluginCfg();
 		~PluginCfg();
 
-		void CgfPluginData(void);
-		void GetOpenPluginInfo(struct OpenPluginInfo *info);
+		void FillPanelData(struct PanelData * data, PanelIndex index);
+		void ReloadPanelString(struct PanelData * data, PanelIndex index);
+
 		void GetPluginInfo(struct PluginInfo *info);
 		int Configure(int itemNumber);
 		bool LogEnable(void) const {return logEnable;};
-
 };
 
 #endif /* __CONFIGPLUGIN_H__ */

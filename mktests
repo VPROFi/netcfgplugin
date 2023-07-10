@@ -1,5 +1,9 @@
 #!/bin/sh
 mkdir -p tests
 gcc -g -DMAIN_COMMON_LOG src/common/log.c -o tests/log
+gcc -g -DMAIN_COMMON_SIZESTR src/common/sizestr.c src/common/log.c -o tests/sizestr
 gcc -g -DMAIN_COMMON_ERRNAME src/common/errname.c src/common/log.c -o tests/errname
-g++ -g -std=c++17 -DMAIN_NETIF -Isrc -Wno-error=deprecated src/common/errname.c src/common/log.c src/netif/netif.cpp src/netif/netifs.cpp -o tests/netif
+gcc -g -DMAIN_COMMON_NETUTILS src/common/netutils.c src/common/log.c -o tests/netutils
+gcc -g -DMAIN_COMMON_NETLINK src/common/netlink.c src/common/netutils.c src/common/errname.c src/common/log.c -o tests/netlink
+g++ -g -std=c++17 -DMAIN_NETIF -Isrc -Wno-error=deprecated src/common/sizestr.c src/common/errname.c src/common/log.c src/common/netutils.c src/common/netlink.c src/netif/netif.cpp src/netif/netifs.cpp -o tests/netif
+g++ -g -std=c++17 -DMAIN_NETROUTES -Isrc -Wno-error=deprecated src/common/sizestr.c src/common/errname.c src/common/log.c src/common/netutils.c src/common/netlink.c src/netroute/netroute.cpp src/netroute/netroutes.cpp -o tests/netroute

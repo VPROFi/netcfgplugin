@@ -16,12 +16,15 @@ enum {
 	MPanelNetworkMcRoutesTitle,
 	MPanelNetworkMcRoutes6Title,
 
+	MPanelNetworkRouteRulesTitle,
+
 	MF2,
 	MF4,
 	MF5,
 	MF6,
 	MF7,
 
+	MF6Next,
 	MF6Routes,
 	MF6Routes6,
 	MF6RoutesArp,
@@ -29,6 +32,11 @@ enum {
 	MF6McRoutes6,
 	MF7Routes,
 	MF8Routes,
+
+	MF4Create,
+
+	MF3Rules,
+	MF3Routes,
 
 	MIfConfigTitle,
 	MIfConfigName,

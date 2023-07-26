@@ -7,11 +7,13 @@
 "Network config"
 "Network config"
 "Network Interfaces Configuration"
-"Network Ipv4 Routes Configuration"
-"Network Ipv6 Routes Configuration"
-"Network arp Routes Configuration"
-"Network multicast Ipv4 Routes Configuration"
-"Network multicast Ipv6 Routes Configuration"
+"Ipv4 Routes Configuration"
+"Ipv6 Routes Configuration"
+"ARP Routes Configuration"
+"Multicast Ipv4 Routes Configuration"
+"Multicast Ipv6 Routes Configuration"
+
+"Route rules"
 
 "Refresh"
 "Change"
@@ -20,6 +22,7 @@
 "stopdmp"
 "Routing"
 
+"NextRt"
 "Ipv4"
 "Ipv6"
 "Arp"
@@ -27,6 +30,10 @@
 "McIpv6"
 "Ifaces"
 "Delete"
+
+"Create"
+"Rules"
+"Routes"
 
 "Interface: "
 "Name:"

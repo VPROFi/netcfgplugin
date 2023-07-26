@@ -468,38 +468,200 @@ bool NetRoutes::UpdateByProcNet(void)
 	return true;
 }
 
-bool NetRoutes::SetNameByIndex(const char *ifname, uint32_t ifnameIndex)
+void NetRoutes::SetNameByIndex(const char *ifname, uint32_t ifnameIndex)
 {
-	bool found = false;
 	for( auto & route : inet ) {
-		if( (found = route.ifnameIndex == ifnameIndex) ) {
+		if( route.valid.ifnameIndex && route.ifnameIndex == ifnameIndex ) {
 			route.iface = towstr(ifname);
 			route.valid.iface = 1;
 		}
+
+		if( route.valid.rtnexthop )
+			for( auto & item : route.osdep.nhs ) {
+				if( item.ifindex == ifnameIndex ) {
+					item.iface = std::move(towstr(ifname));
+					item.valid.iface = 1;
+				}
+			}
+
 	}
 	for( auto & route : inet6 ) {
-		if( (found = route.ifnameIndex == ifnameIndex) ) {
+		if( route.valid.ifnameIndex && route.ifnameIndex == ifnameIndex ) {
 			route.iface = towstr(ifname);
 			route.valid.iface = 1;
 		}
+
+		if( route.valid.rtnexthop )
+			for( auto & item : route.osdep.nhs ) {
+				if( item.ifindex == ifnameIndex ) {
+					item.iface = std::move(towstr(ifname));
+					item.valid.iface = 1;
+				}
+			}
 	}
 
 	for( auto & route : arp ) {
-		if( (found = route.ifnameIndex == ifnameIndex) ) {
+		if( route.valid.ifnameIndex && route.ifnameIndex == ifnameIndex ) {
 			route.iface = towstr(ifname);
 			route.valid.iface = 1;
 		}
 	}
-	return found;
+	return;
+}
+
+bool NetRoutes::UpdateNeigbours(const NeighborRecord * nb)
+{
+	if( !nb )
+		return false;
+
+	while( nb->ndm ) {
+		LOG_INFO("---------------- NeighborRecord ---------------------\n");
+		LOG_INFO("nlh.nlmsg_type: %d (%s)\n", nb->nlm.nlmsg_type, nlmsgtype(nb->nlm.nlmsg_type));
+		LOG_INFO("ndm_family:  %d (%s)\n", nb->ndm->ndm_family, familyname(nb->ndm->ndm_family));
+		LOG_INFO("ndm_ifindex: %d\n", nb->ndm->ndm_ifindex);
+		LOG_INFO("ndm_state:   0x%04X (%s)\n", nb->ndm->ndm_state, ndmsgstate(nb->ndm->ndm_state));
+		LOG_INFO("ndm_flags:   0x%02X (%s)\n", nb->ndm->ndm_flags, ndmsgflagsname(nb->ndm->ndm_flags));
+		LOG_INFO("ndm_type:    0x%02X (%s)\n", nb->ndm->ndm_type, rttype(nb->ndm->ndm_type));
+
+		ArpRouteInfo ari;
+		ari.sa_family = nb->ndm->ndm_family;
+		ari.ifnameIndex = nb->ndm->ndm_ifindex;
+		ari.flags = nb->ndm->ndm_flags;
+		ari.type = nb->ndm->ndm_type;
+		ari.state = nb->ndm->ndm_state;
+		ari.valid.state = 1;
+		ari.valid.type = 1;
+		ari.valid.flags = 1;
+		ari.valid.ifnameIndex = (ari.ifnameIndex != -1);
+
+		uint32_t addrlen = 0;
+		uint32_t family = nb->ndm->ndm_family;
+		const size_t maxlen = INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
+		char s[maxlen+1] = {0};
+
+		switch( ari.sa_family ) {
+		case AF_INET:
+		case RTNL_FAMILY_IPMR:
+			addrlen = sizeof(uint32_t);
+			family = AF_INET;
+			break;
+		case AF_INET6:
+		case RTNL_FAMILY_IP6MR:
+			addrlen = sizeof(struct in6_addr);
+			family = AF_INET6;
+			break;
+		case AF_BRIDGE:
+			if( nb->tb[NDA_DST] ) {
+				if( RTA_PAYLOAD(nb->tb[NDA_DST]) == sizeof(struct in6_addr) ) {
+					addrlen = sizeof(struct in6_addr);
+					family = AF_INET6;
+				} else {
+					addrlen = sizeof(uint32_t);
+					family = AF_INET;
+				}
+			}
+			break;
+		//case AF_MCTP:
+		//	addrlen = sizeof(uint8_t);
+		//	break;
+		default:
+			LOG_ERROR("unsupported family %u\n", ari.sa_family);
+			continue;
+		};
+
+		if( nb->tb[NDA_DST] && RTA_PAYLOAD(nb->tb[NDA_DST]) >= addrlen ) {
+			if( inet_ntop(family, RTA_DATA(nb->tb[NDA_DST]), s, maxlen) ) {
+				ari.ip = towstr(s);
+				ari.valid.ip = 1;
+			}
+			LOG_INFO("NDA_DST:    %S\n", ari.ip.c_str());
+		}
+
+		if( nb->tb[NDA_LLADDR] && RTA_PAYLOAD(nb->tb[NDA_LLADDR]) >= ETH_ALEN ) {
+			unsigned char * mac = (unsigned char *)RTA_DATA(nb->tb[NDA_LLADDR]);
+			if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]) > 0 ) {
+				ari.mac = towstr(s);
+				ari.valid.mac = 1;
+			}
+			LOG_INFO("NDA_LLADDR: %S\n", ari.mac.c_str());
+		}
+
+		if( nb->tb[NDA_PROBES] && RTA_PAYLOAD(nb->tb[NDA_PROBES]) >= sizeof(uint32_t) ) {
+			ari.probes = RTA_UINT32_T(nb->tb[NDA_PROBES]);
+			ari.valid.probes = 1;
+			LOG_INFO("NDA_PROBES: %d\n", ari.probes);
+		}
+
+		if( nb->tb[NDA_CACHEINFO] && RTA_PAYLOAD(nb->tb[NDA_CACHEINFO]) >= sizeof(arproute_cacheinfo) ) {
+			ari.ci = *(arproute_cacheinfo *)RTA_DATA(nb->tb[NDA_CACHEINFO]);
+			ari.valid.ci = 1;
+			LOG_INFO("NDA_CACHEINFO: ndm_confirmed %d\n", ari.ci.ndm_confirmed);
+			LOG_INFO("NDA_CACHEINFO: ndm_used      %d\n", ari.ci.ndm_used);
+			LOG_INFO("NDA_CACHEINFO: ndm_updated   %d\n", ari.ci.ndm_updated);
+			LOG_INFO("NDA_CACHEINFO: ndm_refcnt    %d\n", ari.ci.ndm_refcnt);
+			ari.LogCacheInfo();
+		}
+
+		if( nb->tb[NDA_VLAN] && RTA_PAYLOAD(nb->tb[NDA_VLAN]) >= sizeof(uint16_t) ) {
+			ari.vlan = RTA_UINT16_T(nb->tb[NDA_VLAN]);
+			ari.valid.vlan = 1;
+			LOG_INFO("NDA_VLAN:   %d\n", ari.vlan);
+		}
+
+		if( nb->tb[NDA_PORT] && RTA_PAYLOAD(nb->tb[NDA_PORT]) >= sizeof(uint16_t) ) {
+			ari.port = RTA_UINT16_T(nb->tb[NDA_PORT]);
+			ari.valid.port = 1;
+			LOG_INFO("NDA_PORT:   %d\n", ari.port);
+		}
+
+		if( nb->tb[NDA_PROTOCOL] && RTA_PAYLOAD(nb->tb[NDA_PROTOCOL]) >= sizeof(uint8_t) ) {
+			ari.protocol = RTA_UINT8_T(nb->tb[NDA_PROTOCOL]);
+			ari.valid.protocol = 1;
+			LOG_INFO("NDA_PROTOCOL: %d (%s)\n", ari.protocol, rtprotocoltype(ari.protocol));
+		}
+
+		if( nb->tb[NDA_IFINDEX] && RTA_PAYLOAD(nb->tb[NDA_IFINDEX]) >= sizeof(uint32_t) ) {
+			ari.ifnameIndex = RTA_UINT32_T(nb->tb[NDA_IFINDEX]);
+			ari.valid.ifnameIndex = 1;
+			LOG_INFO("NDA_IFINDEX: %d\n", ari.ifnameIndex);
+		}
+
+		if( nb->tb[NDA_NH_ID] && RTA_PAYLOAD(nb->tb[NDA_NH_ID]) >= sizeof(uint32_t) ) {
+			ari.nh_id = RTA_UINT32_T(nb->tb[NDA_NH_ID]);
+			ari.valid.nh_id = 1;
+			LOG_INFO("NDA_NH_ID: %d\n", ari.nh_id);
+		}
+
+		if( nb->tb[NDA_FLAGS_EXT] && RTA_PAYLOAD(nb->tb[NDA_FLAGS_EXT]) >= sizeof(uint32_t) ) {
+			ari.flags_ext = RTA_UINT32_T(nb->tb[NDA_FLAGS_EXT]);
+			ari.valid.flags_ext = 1;
+			LOG_INFO("NDA_FLAGS_EXT: %d\n", ari.flags_ext, ndmsgflags_extname(ari.flags_ext));
+		}
+
+		if( nb->tb[NDA_VNI] && RTA_PAYLOAD(nb->tb[NDA_VNI]) >= sizeof(uint32_t) ) {
+			ari.vni = RTA_UINT32_T(nb->tb[NDA_VNI]);
+			ari.valid.vni = 1;
+			LOG_INFO("NDA_VNI:       %d\n", ari.vni);
+		}
+
+		if( nb->tb[NDA_MASTER] && RTA_PAYLOAD(nb->tb[NDA_MASTER]) >= sizeof(uint32_t) ) {
+			ari.master = RTA_UINT32_T(nb->tb[NDA_MASTER]);
+			ari.valid.master = 1;
+			LOG_INFO("NDA_MASTER:    %d\n", ari.master);
+		}
+
+		//TODO: [NDA_FDB_EXT_ATTRS]	= { .type = NLA_NESTED }, NFEA_ACTIVITY_NOTIFY (FDB_NOTIFY_BIT)
+		arp.push_back(ari);
+		nb++;
+	}
+	return true;
 }
 
 bool NetRoutes::UpdateByNetlink(void * netlink, unsigned char af_family)
 {
 	const RouteRecord * rr = GetRoutes(netlink, af_family);
 
-	if( !rr )
-		return false;
-
+	if( rr )
 	while( rr->rt ) {
 
 		char ifname[MAX_INTERFACE_NAME_LEN] = {0};
@@ -558,7 +720,7 @@ bool NetRoutes::UpdateByNetlink(void * netlink, unsigned char af_family)
 			ipr.valid.ifnameIndex = 1;
 			if_indextoname(ipr.ifnameIndex, ifname);
 			ipr.iface = towstr(ifname);
-			ipr.valid.iface = ipr.iface.empty();
+			ipr.valid.iface = !ipr.iface.empty();
 			LOG_INFO("RTA_OIF: %s (%u)\n", ifname, ipr.ifnameIndex);
 		}
 
@@ -655,14 +817,17 @@ bool NetRoutes::UpdateByNetlink(void * netlink, unsigned char af_family)
 		if( rr->tb[RTA_MULTIPATH] && RTA_PAYLOAD(rr->tb[RTA_MULTIPATH]) >= sizeof(struct rtnexthop) ) {
 			const struct rtnexthop *nh = (struct rtnexthop *)RTA_DATA(rr->tb[RTA_MULTIPATH]);
 			int len = RTA_PAYLOAD(rr->tb[RTA_MULTIPATH]);
-			while( len >= sizeof(*nh) ) {
 
+			ipr.valid.rtnexthop = 1;
+
+			while( len >= sizeof(*nh) ) {
 				LOG_INFO("RTA_MULTIPATH: rtnh_len     %d\n", nh->rtnh_len);
 				LOG_INFO("RTA_MULTIPATH: rtnh_flags   0x%02X (%s)\n", nh->rtnh_flags, rtnhflagsname(nh->rtnh_flags));
 				LOG_INFO("RTA_MULTIPATH: rtnh_hops    %d\n", nh->rtnh_hops);
 				LOG_INFO("RTA_MULTIPATH: rtnh_ifindex %d\n", nh->rtnh_ifindex);
 
-				NextHope netHope = {0};
+				NextHope netHope;
+				netHope.valid.nexthope = 1;
 				netHope.flags = nh->rtnh_flags;
 				netHope.weight = nh->rtnh_hops;
 				netHope.ifindex = nh->rtnh_ifindex;
@@ -798,9 +963,7 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 
 	const RuleRecord * r = GetRules(netlink, AF_UNSPEC);
 
-	if( !r )
-		return false;
-
+	if( r )
 	while( r->frh ) {
 
 		char ifname[MAX_INTERFACE_NAME_LEN] = {0};
@@ -945,9 +1108,9 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 		}
 
 		if( r->tb[FRA_TUN_ID] && RTA_PAYLOAD(r->tb[FRA_TUN_ID]) >= sizeof(uint64_t) ) {
-			rri.tun_id = RTA_UINT64_T(r->tb[FRA_TUN_ID]);
+			rri.tun_id = ntohll(RTA_UINT64_T(r->tb[FRA_TUN_ID]));
 			rri.valid.tun_id = 1;
-			LOG_INFO("FRA_TUN_ID:             %lld\n", ntohll(rri.tun_id));
+			LOG_INFO("FRA_TUN_ID:             %lld\n", rri.tun_id);
 		}
 		if( r->tb[FRA_TABLE] && RTA_PAYLOAD(r->tb[FRA_TABLE]) >= sizeof(uint32_t) ) {
 			rri.table = RTA_UINT32_T(r->tb[FRA_TABLE]);
@@ -1015,150 +1178,10 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 
 	r = 0;
 
-	const NeighborRecord * nb = GetNeighbors(netlink, AF_UNSPEC);
-	if( !nb )
+	if( !UpdateNeigbours(GetNeighbors(netlink, AF_UNSPEC, 0)) )
 		return false;
 
-	while( nb->ndm ) {
-		LOG_INFO("---------------- NeighborRecord ---------------------\n");
-		LOG_INFO("nlh.nlmsg_type: %d (%s)\n", nb->nlm.nlmsg_type, nlmsgtype(nb->nlm.nlmsg_type));
-		LOG_INFO("ndm_family:  %d (%s)\n", nb->ndm->ndm_family, familyname(nb->ndm->ndm_family));
-		LOG_INFO("ndm_ifindex: %d\n", nb->ndm->ndm_ifindex);
-		LOG_INFO("ndm_state:   0x%04X (%s)\n", nb->ndm->ndm_state, ndmsgstate(nb->ndm->ndm_state));
-		LOG_INFO("ndm_flags:   0x%02X (%s)\n", nb->ndm->ndm_flags, ndmsgflagsname(nb->ndm->ndm_flags));
-		LOG_INFO("ndm_type:    0x%02X (%s)\n", nb->ndm->ndm_type, rttype(nb->ndm->ndm_type));
-
-		ArpRouteInfo ari;
-		ari.sa_family = nb->ndm->ndm_family;
-		ari.ifnameIndex = nb->ndm->ndm_ifindex;
-		ari.flags = nb->ndm->ndm_flags;
-		ari.type = nb->ndm->ndm_type;
-		ari.state = nb->ndm->ndm_state;
-		ari.valid.state = 1;
-		ari.valid.type = 1;
-		ari.valid.flags = 1;
-		ari.valid.ifnameIndex = (ari.ifnameIndex != -1);
-
-		uint32_t addrlen = 0;
-		uint32_t family = nb->ndm->ndm_family;
-		const size_t maxlen = INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
-		char s[maxlen+1] = {0};
-
-		switch( ari.sa_family ) {
-		case AF_INET:
-		case RTNL_FAMILY_IPMR:
-			addrlen = sizeof(uint32_t);
-			family = AF_INET;
-			break;
-		case AF_INET6:
-		case RTNL_FAMILY_IP6MR:
-			addrlen = sizeof(struct in6_addr);
-			family = AF_INET6;
-			break;
-		case AF_BRIDGE:
-			if( nb->tb[NDA_DST] ) {
-				if( RTA_PAYLOAD(nb->tb[NDA_DST]) == sizeof(struct in6_addr) ) {
-					addrlen = sizeof(struct in6_addr);
-					family = AF_INET6;
-				} else {
-					addrlen = sizeof(uint32_t);
-					family = AF_INET;
-				}
-			}
-			break;
-		//case AF_MCTP:
-		//	addrlen = sizeof(uint8_t);
-		//	break;
-		default:
-			LOG_ERROR("unsupported family %u\n", ari.sa_family);
-			continue;
-		};
-
-		if( nb->tb[NDA_DST] && RTA_PAYLOAD(nb->tb[NDA_DST]) >= addrlen ) {
-			if( inet_ntop(family, RTA_DATA(nb->tb[NDA_DST]), s, maxlen) ) {
-				ari.ip = towstr(s);
-				ari.valid.ip = 1;
-			}
-			LOG_INFO("NDA_DST:    %S\n", ari.ip.c_str());
-		}
-
-		if( nb->tb[NDA_LLADDR] && RTA_PAYLOAD(nb->tb[NDA_LLADDR]) >= ETH_ALEN ) {
-			unsigned char * mac = (unsigned char *)RTA_DATA(nb->tb[NDA_LLADDR]);
-			if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]) > 0 ) {
-				ari.mac = towstr(s);
-				ari.valid.mac = 1;
-			}
-			LOG_INFO("NDA_LLADDR: %S\n", ari.mac.c_str());
-		}
-
-		if( nb->tb[NDA_PROBES] && RTA_PAYLOAD(nb->tb[NDA_PROBES]) >= sizeof(uint32_t) ) {
-			ari.probes = RTA_UINT32_T(nb->tb[NDA_PROBES]);
-			ari.valid.probes = 1;
-			LOG_INFO("NDA_PROBES: %d\n", ari.probes);
-		}
-
-		if( nb->tb[NDA_CACHEINFO] && RTA_PAYLOAD(nb->tb[NDA_CACHEINFO]) >= sizeof(arproute_cacheinfo) ) {
-			ari.ci = *(arproute_cacheinfo *)RTA_DATA(nb->tb[NDA_CACHEINFO]);
-			ari.valid.ci = 1;
-			LOG_INFO("NDA_CACHEINFO: ndm_confirmed %d\n", ari.ci.ndm_confirmed);
-			LOG_INFO("NDA_CACHEINFO: ndm_used      %d\n", ari.ci.ndm_used);
-			LOG_INFO("NDA_CACHEINFO: ndm_updated   %d\n", ari.ci.ndm_updated);
-			LOG_INFO("NDA_CACHEINFO: ndm_refcnt    %d\n", ari.ci.ndm_refcnt);
-			ari.LogCacheInfo();
-		}
-
-		if( nb->tb[NDA_VLAN] && RTA_PAYLOAD(nb->tb[NDA_VLAN]) >= sizeof(uint16_t) ) {
-			ari.vlan = RTA_UINT16_T(nb->tb[NDA_VLAN]);
-			ari.valid.vlan = 1;
-			LOG_INFO("NDA_VLAN:   %d\n", ari.vlan);
-		}
-
-		if( nb->tb[NDA_PORT] && RTA_PAYLOAD(nb->tb[NDA_PORT]) >= sizeof(uint16_t) ) {
-			ari.port = RTA_UINT16_T(nb->tb[NDA_PORT]);
-			ari.valid.port = 1;
-			LOG_INFO("NDA_PORT:   %d\n", ari.port);
-		}
-
-		if( nb->tb[NDA_PROTOCOL] && RTA_PAYLOAD(nb->tb[NDA_PROTOCOL]) >= sizeof(uint8_t) ) {
-			ari.protocol = RTA_UINT8_T(nb->tb[NDA_PROTOCOL]);
-			ari.valid.protocol = 1;
-			LOG_INFO("NDA_PROTOCOL: %d (%s)\n", ari.protocol, rtprotocoltype(ari.protocol));
-		}
-
-		if( nb->tb[NDA_IFINDEX] && RTA_PAYLOAD(nb->tb[NDA_IFINDEX]) >= sizeof(uint32_t) ) {
-			ari.ifnameIndex = RTA_UINT32_T(nb->tb[NDA_IFINDEX]);
-			ari.valid.ifnameIndex = 1;
-			LOG_INFO("NDA_IFINDEX: %d\n", ari.ifnameIndex);
-		}
-
-		if( nb->tb[NDA_NH_ID] && RTA_PAYLOAD(nb->tb[NDA_NH_ID]) >= sizeof(uint32_t) ) {
-			ari.nh_id = RTA_UINT32_T(nb->tb[NDA_NH_ID]);
-			ari.valid.nh_id = 1;
-			LOG_INFO("NDA_NH_ID: %d\n", ari.nh_id);
-		}
-
-		if( nb->tb[NDA_FLAGS_EXT] && RTA_PAYLOAD(nb->tb[NDA_FLAGS_EXT]) >= sizeof(uint32_t) ) {
-			ari.flags_ext = RTA_UINT32_T(nb->tb[NDA_FLAGS_EXT]);
-			ari.valid.flags_ext = 1;
-			LOG_INFO("NDA_FLAGS_EXT: %d\n", ari.flags_ext, ndmsgflags_extname(ari.flags_ext));
-		}
-
-		if( nb->tb[NDA_VNI] && RTA_PAYLOAD(nb->tb[NDA_VNI]) >= sizeof(uint32_t) ) {
-			ari.vni = RTA_UINT32_T(nb->tb[NDA_VNI]);
-			ari.valid.vni = 1;
-			LOG_INFO("NDA_VNI:       %d\n", ari.vni);
-		}
-
-		if( nb->tb[NDA_MASTER] && RTA_PAYLOAD(nb->tb[NDA_MASTER]) >= sizeof(uint32_t) ) {
-			ari.master = RTA_UINT32_T(nb->tb[NDA_MASTER]);
-			ari.valid.master = 1;
-			LOG_INFO("NDA_MASTER:    %d\n", ari.master);
-		}
-
-		//TODO: [NDA_FDB_EXT_ATTRS]	= { .type = NLA_NESTED }, NFEA_ACTIVITY_NOTIFY (FDB_NOTIFY_BIT)
-		arp.push_back(ari);
-		nb++;
-	}
+	UpdateNeigbours(GetNeighbors(netlink, AF_UNSPEC, NTF_PROXY));
 
 	const LinkRecord * lr = GetLinks(netlink);
 	if( !lr )
@@ -1181,6 +1204,7 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 
 		lr++;
 	}
+
 	return true;
 }
 
@@ -1194,12 +1218,12 @@ bool NetRoutes::UpdateByNetlink(void)
 	Clear();
 
 	//bool res = UpdateByNetlink(netlink, AF_UNSPEC); //UpdateByNetlink(netlink, AF_INET) && UpdateByNetlink(netlink, AF_INET6);
-	bool res = UpdateByNetlink(netlink, AF_PACKET);
+	//bool res = UpdateByNetlink(netlink, AF_PACKET);
+	bool res = UpdateByNetlink(netlink, AF_UNSPEC);
 
 	CloseNetlink(netlink);
 
 	return res;
-	//return false;
 }
 #endif
 

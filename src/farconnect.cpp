@@ -1,5 +1,4 @@
 #include "netcfgplugin.h"
-#include "netcfglng.h"
 
 #include <common/log.h>
 #include <common/errname.h>

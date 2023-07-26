@@ -12,16 +12,19 @@
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <common/netlink.h>
-typedef struct {
+struct NextHope {
 	uint8_t flags;
 	uint8_t weight; // ttl for rtm_flags & RTM_F_CLONED && rtm_type == RTN_MULTICAST
 	uint32_t ifindex;
+	std::wstring iface;
 	struct {
+		unsigned char nexthope:1;
 		unsigned char encap:1;
 		unsigned char gateway:1;
 		unsigned char flowfrom:1;
 		unsigned char flowto:1;
 		unsigned char rtvia:1;
+		unsigned char iface:1;
 	} valid;
 	Encap enc;
 	std::wstring gateway;
@@ -30,7 +33,11 @@ typedef struct {
 
 	uint8_t rtvia_family;
 	std::wstring rtvia_addr;
-} NextHope;
+
+	NextHope(): flags(0), weight(0), ifindex(0), valid({0}), enc({0}) {};
+	~NextHope() {};
+
+};
 #endif
 
 struct IpRouteInfo {
@@ -147,11 +154,13 @@ struct IpRouteInfo {
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	void LogRtCache(void) const;
 #endif
-
 	IpRouteInfo();
 	~IpRouteInfo();
 private:
-	bool ExecuteCommand(const char * cmd);
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	const char * GetEncap(const Encap & enc) const;
+	const char * GetNextHopes(void) const;
+#endif
 };
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
@@ -203,9 +212,9 @@ struct ArpRouteInfo {
 	} valid;
 	void LogCacheInfo(void) const;
 #endif
-	bool CreateArpRoute(void);
-	bool DeleteArpRoute(void);
-	bool ChangeArpRoute(ArpRouteInfo & arpr);
+	bool Create(void);
+	bool Delete(void);
+	bool Change(ArpRouteInfo & arpr);
 
 	void Log(void) const;
 
@@ -295,8 +304,15 @@ struct RuleRouteInfo {
 
 	bool operator<(const RuleRouteInfo & rule) const { return rule.priority > priority; };
 
-	void ToRuleString(void);
+	bool DeleteRule(void);
+	bool CreateRule(void);
+	bool ChangeRule(RuleRouteInfo & ipr);
+
+	void ToRuleString(bool skipExtInfo = false);
 	void Log(void) const;
+
+	RuleRouteInfo();
+	~RuleRouteInfo();
 };
 #endif
 

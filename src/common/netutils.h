@@ -17,8 +17,17 @@ extern "C" {
 #include <net/if.h>
 #include <unistd.h>
 
+// Maximal IPv6 address length see https://dirask.com/posts/Maximal-IPv6-address-length-joz4Np
+#define MAX_IP_SIZE sizeof("ffff:ffff:ffff:ffff:ffff:ffff:192.168.100.100%wlxd123456789ab")
+#define MAX_INTERFACE_NAME_LEN 16
+
+#ifndef htonll
 #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+#endif
+
+#ifndef ntohll
 #define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#endif
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 
@@ -181,6 +190,7 @@ extern "C" {
 
 const char * ifflagsname(uint32_t flags); // IFF_
 uint32_t addflag(char * buf, const char * name, uint32_t flags, uint32_t flag);
+uint32_t addflag_space_separator(char * buf, const char * name, uint32_t flags, uint32_t flag);
 const char * ifflagsname(uint32_t flags);
 uint8_t Ip6MaskToBits(const char * mask);
 uint8_t IpMaskToBits(const char * mask);
@@ -289,10 +299,6 @@ const char * ifoperstate(uint8_t operstate);
 const char * iflinkmode(uint8_t link_mode);
 
 #endif
-
-// Maximal IPv6 address length see https://dirask.com/posts/Maximal-IPv6-address-length-joz4Np
-#define MAX_IP_SIZE sizeof("ffff:ffff:ffff:ffff:ffff:ffff:192.168.100.100%wlxd123456789ab")
-#define MAX_INTERFACE_NAME_LEN 16
 
 #ifdef __cplusplus
 }

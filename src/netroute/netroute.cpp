@@ -6,6 +6,8 @@
 #include <common/netutils.h>
 #include <common/sizestr.h>
 
+#include <memory>
+
 extern "C" {
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -18,10 +20,19 @@ extern "C" {
 #define LOG_SOURCE_FILE "netroute.cpp"
 extern const char * LOG_FILE;
 
+#if INTPTR_MAX == INT32_MAX
+#define LLFMT "%lld"
+#elif INTPTR_MAX == INT64_MAX
+#define LLFMT "%ld"
+#else
+    #error "Environment not 32 or 64-bit."
+#endif
+
 IpRouteInfo::IpRouteInfo()
 {
 	hoplimit = (uint32_t)-1;
 	memset(&valid, 0, sizeof(valid));
+	flags = 0;
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	osdep.metric = 0;
 	osdep.table = 0;
@@ -44,30 +55,232 @@ IpRouteInfo::~IpRouteInfo()
 ArpRouteInfo::ArpRouteInfo()
 {
 	flags = 0;
+	sa_family = AF_INET;
 	#if !defined(__APPLE__) && !defined(__FreeBSD__)
-	sa_family = AF_PACKET;
 	hwType = 0;
 	type = 0;
 	state = 0;
 	ci = {0};
 	valid = {0};
-	#else
-	sa_family = AF_LINK;
+	flags_ext = 0;
 	#endif
-//	LOG_INFO("\n");
 }
 ArpRouteInfo::~ArpRouteInfo()
 {
 //	LOG_INFO("\n");
 }
 
+RuleRouteInfo::RuleRouteInfo()
+{
+	type = 0;
+	table = 0;
+	flags = 0;
+	protocol = 0;
+	ip_protocol = 0;
+	valid = {0};
+}
+
+RuleRouteInfo::~RuleRouteInfo()
+{
+
+}
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+const char * IpRouteInfo::GetEncap(const Encap & enc) const
+{
+	static char buf[256];
+	char * ptr = buf;
+	size_t size = sizeof(buf), res = 0;
+	buf[0] = 0;
+
+	switch( enc.type ) {
+	case LWTUNNEL_ENCAP_MPLS:
+		if( (res = snprintf(ptr, size, "mpls")) < 0 || size < res )
+			break;
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( enc.data.mpls.valid.dst )
+			if( (res = snprintf(ptr, size, " %s", enc.data.mpls.dst)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		if( enc.data.mpls.valid.ttl )
+			snprintf(ptr, size, " ttl %u", enc.data.mpls.ttl);
+		break;
+	case LWTUNNEL_ENCAP_IP:
+	case LWTUNNEL_ENCAP_IP6:
+		if( (res = snprintf(ptr, size, "%s", enc.type == LWTUNNEL_ENCAP_IP ? "ip":"ip6")) < 0 || size < res )
+			break;
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( enc.data.ip.valid.id )
+			if( (res = snprintf(ptr, size, " id " LLFMT, enc.data.ip.id)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.ttl )
+			if( (res = snprintf(ptr, size, " ttl %u", enc.data.ip.ttl)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.hoplimit )
+			if( (res = snprintf(ptr, size, " hoplimit %u", enc.data.ip.hoplimit)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.tos )
+			if( (res = snprintf(ptr, size, " tos %u", enc.data.ip.tos)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.tc )
+			if( (res = snprintf(ptr, size, " tc %u", enc.data.ip.tc)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.src )
+			if( (res = snprintf(ptr, size, " src %s", enc.data.ip.src)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.dst )
+			if( (res = snprintf(ptr, size, " dst %s", enc.data.ip.dst)) < 0 || size < res )
+				break;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( enc.data.ip.valid.flags ) {
+			//if( (res = snprintf(ptr, size, " flags 0x%04x (%s)", enc.data.ip.flags, tunnelflagsname(enc.data.ip.flags))) < 0 || size < res )
+			//	break;
+
+			if( (res = snprintf(ptr, size, " %s", tunnelflagsname(enc.data.ip.flags))) < 0 || size < res )
+				break;
+
+			ptr += res;
+			size -= res;
+			res = 0;
+
+			if( enc.data.ip.flags & TUNNEL_GENEVE_OPT && enc.data.ip.valid.geneve ) {
+				if( (res = snprintf(ptr, size, " %s", enc.data.ip.geneve_opts ) < 0 || size < res ) )
+					break;
+			} else if( enc.data.ip.flags & TUNNEL_VXLAN_OPT && enc.data.ip.valid.vxlan ) {
+				if( enc.data.ip.valid.vxlan_gbp )
+					if( (res = snprintf(ptr, size, " %u", enc.data.ip.vxlan_gbp )) < 0 || size < res )
+						break;
+			} else if( enc.data.ip.flags & TUNNEL_ERSPAN_OPT && enc.data.ip.valid.erspan ) {
+				if( (res = snprintf(ptr, size, " %s", enc.data.ip.erspan_opts ) < 0 || size < res ) )
+					break;
+			}
+		}
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		break;
+	}
+
+	return buf;
+}
+
+const char * IpRouteInfo::GetNextHopes(void) const
+{
+	static char buf[1024];
+	char * ptr = buf;
+	size_t size = sizeof(buf), res = 0;
+	buf[0] = 0;
+
+	if( !valid.rtnexthop )
+		return buf;
+
+	for( const auto & item : osdep.nhs ) {
+
+		if( !item.valid.nexthope )
+			continue;
+
+		if(  (res = snprintf(ptr, size, " nexthop")) < 0 || size < res  )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+		
+
+		if( item.valid.encap && (res = snprintf(ptr, size, " encap %s", GetEncap(item.enc))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( item.valid.rtvia ) {
+			if( (res = snprintf(ptr, size, " via %s %S", ipfamilyname(item.rtvia_family), item.rtvia_addr.c_str() )) < 0 || size < res )
+				break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		} else if( item.valid.gateway )
+			if( (res = snprintf(ptr, size, " via %S", item.gateway.c_str() )) < 0 || size < res )
+				break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( item.valid.iface )
+			if( (res = snprintf(ptr, size, " dev %S", item.iface.c_str() )) < 0 || size < res )
+				break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags && valid.type && flags & RTM_F_CLONED && osdep.type == RTN_MULTICAST )
+			res = snprintf(ptr, size, " ttl %u", item.weight);
+		else
+			res = snprintf(ptr, size, " weight %u", item.weight+1);
+
+		if( res < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (res = snprintf(ptr, size, "%s%s", item.flags & RTNH_F_ONLINK ? " onlink":"", item.flags & RTNH_F_PERVASIVE ? " pervasive":"")) < 0 || size < res )
+			break;
+		ptr += res;
+		size -= res;
+		res = 0;
+	}
+
+	return buf;
+}
+
+#endif
 
 void IpRouteInfo::Log(void) const
 {
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	const char * fmt = sa_family == AF_INET ? \
-		"from: %15S to: %18S via: %15S dev: %17S prefsrc: %15S table: %5s type: %11s proto: %6s scope: %7s metric: %4d perf: %6s tos: %3u flags: 0x%08X(%s)\n":
-		"from: %15S to: %29S via: %15S dev: %17S prefsrc: %29S table: %5s type: %11s proto: %6s scope: %7s metric: %4d perf: %6s tos: %3u flags: 0x%08X(%s)\n";
+		"from: %15S to: %18S via: %15S dev: %17S prefsrc: %15S table: %5s type: %11s proto: %6s scope: %7s metric: %4d perf: %6s tos: %3u flags: 0x%08X(%s) encap: %s %s\n":
+		"from: %15S to: %29S via: %15S dev: %17S prefsrc: %29S table: %5s type: %11s proto: %6s scope: %7s metric: %4d perf: %6s tos: %3u flags: 0x%08X(%s) encap: %s %s\n";
 	LOG_INFO(fmt,
 		osdep.fromsrcIpandMask.empty() ? L"any":osdep.fromsrcIpandMask.c_str(),
 		!destIpandMask.empty() ? destIpandMask.c_str():L"default",
@@ -81,7 +294,8 @@ void IpRouteInfo::Log(void) const
 		osdep.metric,
 		rticmp6pref(osdep.icmp6pref),
 		osdep.tos,
-		flags, RouteFlagsToString(flags, sa_family == AF_INET6));
+		flags, RouteFlagsToString(flags, sa_family == AF_INET6), valid.encap ? GetEncap(osdep.enc):"none", GetNextHopes());
+
 	//LogRtCache();
 #else
 	const char * fmt = sa_family == AF_INET ? \
@@ -111,7 +325,7 @@ static std::wstring towstr(const char * name)
 	return std::wstring(_s.begin(), _s.end());
 }
 
-void RuleRouteInfo::ToRuleString(void)
+void RuleRouteInfo::ToRuleString(bool skipExtInfo)
 {
 	const size_t maxlen = sizeof("18446744073709551615");
 	char s[maxlen] = {0};
@@ -119,7 +333,7 @@ void RuleRouteInfo::ToRuleString(void)
 	if( !rule.empty() )
 		return;
 
-	if( type == RTM_DELRULE )
+	if( !skipExtInfo && type == RTM_DELRULE )
 		rule += L"Deleted ";
 
 	if( flags & FIB_RULE_INVERT )
@@ -127,6 +341,9 @@ void RuleRouteInfo::ToRuleString(void)
 
 	if( valid.fromIpandMask )
 		rule += L"from " + fromIpandMask;
+
+	if( valid.toIpandMask )
+		rule += L" to " + toIpandMask;
 
 	if( tos ) {
 		if( snprintf(s, maxlen, "0x%02x", tos) > 0 )
@@ -144,14 +361,17 @@ void RuleRouteInfo::ToRuleString(void)
 	if( valid.iiface ) {
 		rule += L" iif ";
 		rule += iiface;
-		if( flags & FIB_RULE_IIF_DETACHED )
+		if( !skipExtInfo && flags & FIB_RULE_IIF_DETACHED )
 			rule += L" [detached]";
 	}
 	if( valid.oiface ) {
 		rule += L" oif " + oiface;
-		if( flags & FIB_RULE_OIF_DETACHED )
+		if( !skipExtInfo && flags & FIB_RULE_OIF_DETACHED )
 			rule += L" [detached]";
 	}
+
+	if( skipExtInfo && valid.priority )
+		rule += L" pref " + std::to_wstring(priority);
 
 	if( valid.l3mdev )
 		rule += L" l3mdev";
@@ -176,7 +396,7 @@ void RuleRouteInfo::ToRuleString(void)
 	}
 
 	if( valid.tun_id )
-		rule += L" tun_id " + std::to_wstring(ntohll(tun_id)); 
+		rule += L" tun_id " + std::to_wstring(tun_id);
 
 	if( table ) {
 		rule += L" table " + towstr(rtruletable(table));
@@ -201,21 +421,22 @@ void RuleRouteInfo::ToRuleString(void)
 				rule += L" goto " + std::to_wstring(goto_priority);
 			else
 				rule += L" goto none";
-			if( flags & FIB_RULE_UNRESOLVED )
+			if( !skipExtInfo && flags & FIB_RULE_UNRESOLVED )
 				rule += L" [unresolved]";
 			break;
 		case RTN_NAT:
-			if( valid.gateway )
-				rule += L" map-to "+ gateway;
-			else
-				rule += L" masquerade";
+			if( !skipExtInfo )
+				if( valid.gateway )
+					rule += L" map-to "+ gateway;
+				else
+					rule += L" masquerade";
 			break;
 		default:
 			rule += L" " + towstr(fractionrule(action));
 			break;
 	};
 
-	if( valid.protocol )
+	if( valid.protocol && protocol )
 		rule += L" proto " + towstr(rtprotocoltype(protocol));
 }
 
@@ -248,65 +469,422 @@ void IpRouteInfo::LogRtCache(void) const
 	}
 }
 
-bool IpRouteInfo::ExecuteCommand(const char * cmd)
-{
-	assert( cmd != 0 );
-
-	if( destIpandMask.empty() || ( iface.empty() && gateway.empty() ) )
-		return false;
-
-	char buffer[MAX_CMD_LEN], * ptr = buffer;
-	size_t size = sizeof(buffer);
-	int res = -1;
-
-	if( iface == L"blackhole" || iface == L"unreachable" || iface == L"prohibit" || iface == L"throw" ) {
-		if( snprintf(buffer, sizeof(buffer), "ip -%s route %s %S %S", sa_family == AF_INET ? "4":"6", cmd, iface.c_str(), destIpandMask.c_str()) > 0 )
-			return RootExec(buffer) == 0;
-	} else
-		res = snprintf(buffer, sizeof(buffer), "ip -%s route %s %S", sa_family == AF_INET ? "4":"6", cmd, destIpandMask.c_str());
-
-	if( res < 0 )
-		return false;		
-	ptr += res;
-	size -= res;
-	res = 0;
-	if( !gateway.empty() && (res = snprintf(ptr, size, " via %S", gateway.c_str())) < 0 )
-		return false;
-	ptr += res;
-	size -= res;
-	res = 0;
-	if( !iface.empty() && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 )
-		return false;
-	ptr += res;
-	size -= res;
-	res = 0;
-	if( osdep.metric && (res = snprintf(ptr, size, " metric %u", osdep.metric)) < 0 )
-		return false;
-	ptr += res;
-	size -= res;
-	res = 0;
-	if( osdep.table && (res = snprintf(ptr, size, " table %u", osdep.table)) < 0 )
-		return false;
-
-	return RootExec(buffer) == 0;
-}
-#else
-bool IpRouteInfo::ExecuteCommand(const char * cmd)
-{
-	LOG_INFO("unsuported %s yet\n", cmd);
-	return false;
-}
-#endif
-
 bool IpRouteInfo::CreateIpRoute(void)
 {
 	LOG_INFO("\n");
-	return ExecuteCommand("add");
+
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	do {
+		switch(sa_family) {
+		case AF_INET:
+		case AF_INET6:
+			res = snprintf(ptr, size, "ip %sroute add", sa_family == AF_INET6 ? "-6 ":"");
+			break;
+		case RTNL_FAMILY_IPMR:
+		case RTNL_FAMILY_IP6MR:
+			//res = snprintf(ptr, size, "ip %smroute add", sa_family == RTNL_FAMILY_IP6MR ? "-6 ":"");
+			//break;
+		default:
+			LOG_ERROR("unsupported family: %u (%s)", sa_family, ipfamilyname(sa_family));
+			return false;
+		};
+       
+		if( res < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.type && (res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (res = snprintf(ptr, size, " %S", valid.destIpandMask ? destIpandMask.c_str():L"default")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.tos && osdep.tos && (res = snprintf(ptr, size, " tos %u", osdep.tos)) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.table && (res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.protocol && (res = snprintf(ptr, size, " proto %s", rtprotocoltype(osdep.protocol))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.scope && (res = snprintf(ptr, size, " scope %s", rtscopetype(osdep.scope))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.metric && (res = snprintf(ptr, size, " metric %u", osdep.metric)) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		// TODO: RTA_TTL_PROPAGATE
+
+		if( valid.nhid ) {
+
+			if( (res = snprintf(ptr, size, " nhid %u", osdep.nhid)) < 0 || size < res )
+				break;
+
+			ptr += res;
+			size -= res;
+			res = 0;
+
+		} else {
+
+		if( valid.encap && (res = snprintf(ptr, size, " encap %s", GetEncap(osdep.enc))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.gateway && (res = snprintf(ptr, size, " via %s %S", ipfamilyname(sa_family), gateway.c_str())) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags && (res = snprintf(ptr, size, "%s%s", flags & RTNH_F_ONLINK ? " onlink":"", flags & RTNH_F_PERVASIVE ? " pervasive":"")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		// TODO: OPTIONS FLAGS
+
+		if( valid.rtnexthop && (res = snprintf(ptr, size, "%s", GetNextHopes())) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		}
+
+		return RootExec(buf.get()) == 0;
+
+	} while(0);
+
+	return false;
 }
 
 bool IpRouteInfo::DeleteIpRoute(void)
 {
-	return ExecuteCommand("del");
+
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	do {
+		switch(sa_family) {
+		case AF_INET:
+		case AF_INET6:
+			res = snprintf(ptr, size, "ip %sroute del", sa_family == AF_INET6 ? "-6 ":"");
+			break;
+		case RTNL_FAMILY_IPMR:
+		case RTNL_FAMILY_IP6MR:
+			//res = snprintf(ptr, size, "ip %smroute del", sa_family == RTNL_FAMILY_IP6MR ? "-6 ":"");
+			//break;
+		default:
+			LOG_ERROR("unsupported family: %u (%s)", sa_family, ipfamilyname(sa_family));
+			return false;
+		};
+       
+		if( res < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( valid.type && (res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( (res = snprintf(ptr, size, " %S", valid.destIpandMask ? destIpandMask.c_str():L"default")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( valid.table && (res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+		if( valid.nhid ) {
+			if( (res = snprintf(ptr, size, " nhid %u", osdep.nhid)) < 0 || size < res )
+				break;
+			ptr += res;
+			size -= res;
+			res = 0;
+		}
+
+		return RootExec(buf.get()) == 0;
+
+	} while(0);
+
+	return false;
+}
+
+bool RuleRouteInfo::DeleteRule(void)
+{
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	const size_t size = MAX_CMD_LEN+1;
+	rule.clear();
+	ToRuleString(true);
+	int res = 0;
+	switch(family) {
+	case AF_INET:
+	case AF_INET6:
+		res = snprintf(buf.get(), size, "ip %srule del %S", family == AF_INET6 ? "-6 ":"", rule.c_str());
+		break;
+	case RTNL_FAMILY_IPMR:
+	case RTNL_FAMILY_IP6MR:
+		res = snprintf(buf.get(), size, "ip %smrule del %S", family == RTNL_FAMILY_IP6MR ? "-6 ":"", rule.c_str());
+		break;
+	default:
+		return false;
+	};
+
+	return res > 0 ? (RootExec(buf.get()) == 0):false;
+}
+
+bool RuleRouteInfo::CreateRule(void)
+{
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	const size_t size = MAX_CMD_LEN+1;
+	rule.clear();
+	ToRuleString(true);
+	int res = 0;
+
+	switch(family) {
+	case AF_INET:
+	case AF_INET6:
+		res = snprintf(buf.get(), size, "ip %srule add %S", family == AF_INET6 ? "-6 ":"", rule.c_str());
+		break;
+	case RTNL_FAMILY_IPMR:
+	case RTNL_FAMILY_IP6MR:
+		res = snprintf(buf.get(), size, "ip %smrule add %S", family == RTNL_FAMILY_IP6MR ? "-6 ":"", rule.c_str());
+		break;
+	default:
+		return false;
+	};
+
+	return res > 0 ? (RootExec(buf.get()) == 0):false;
+}
+
+bool RuleRouteInfo::ChangeRule(RuleRouteInfo & ipr)
+{
+	if( DeleteRule() ) {
+		if( ipr.CreateRule() ) {
+			*this = ipr;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ArpRouteInfo::Create(void)
+{
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	do {
+		if( (res = snprintf(ptr, size, "ip %sneigh add", sa_family == AF_INET6 ? "-6 ":"")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+
+		if( valid.flags && flags & NTF_PROXY ) {
+			if( valid.ip && (res = snprintf(ptr, size, " proxy %S", ip.c_str())) < 0 || size < res )
+				break;
+		} else {
+			if( valid.ip && (res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res )
+				break;
+
+			ptr += res;
+			size -= res;
+			res = 0;
+
+			if( valid.mac && (res = snprintf(ptr, size, " lladdr %S", mac.c_str())) < 0 || size < res )
+				break;
+
+			ptr += res;
+			size -= res;
+			res = 0;
+
+			if( valid.state && (res = snprintf(ptr, size, " nud %s", ndmsgstate(state))) < 0 || size < res )
+				break;
+
+		}
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+
+		if( valid.flags && flags & NTF_ROUTER && (res = snprintf(ptr, size, " router")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags && flags & NTF_USE && (res = snprintf(ptr, size, " use")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags_ext && flags_ext & NTF_EXT_MANAGED && (res = snprintf(ptr, size, " managed")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags && flags & NTF_EXT_LEARNED && (res = snprintf(ptr, size, " extern_learn")) < 0 || size < res )
+			break;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.protocol && (res = snprintf(ptr, size, " protocol %s", rtprotocoltype(protocol))) < 0 || size < res )
+			break;
+
+		return RootExec(buf.get()) == 0;
+
+	} while(0);
+
+	return false;
+}
+
+bool ArpRouteInfo::Delete(void)
+{
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	if( (res = snprintf(ptr, size, "ip neigh del%s", (valid.flags && flags & NTF_PROXY) ? " proxy":"")) < 0 || size < res )
+		return false;
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.ip && (res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res )
+		return false;
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+		return false;
+
+	return RootExec(buf.get()) == 0;
+}
+
+#else
+bool IpRouteInfo::CreateIpRoute(void)
+{
+	LOG_ERROR("unsuported create yet\n");
+	return false;
+}
+
+bool IpRouteInfo::DeleteIpRoute(void)
+{
+	LOG_ERROR("unsuported delete yet\n");
+	return false;
+}
+
+bool ArpRouteInfo::Create(void)
+{
+	LOG_ERROR("unsuported yet\n");
+	return false;
+}
+bool ArpRouteInfo::Delete(void)
+{
+	LOG_ERROR("unsuported yet\n");
+	return false;
+}
+
+#endif
+
+bool ArpRouteInfo::Change(ArpRouteInfo & arpr)
+{
+	if( Delete() ) {
+		if( arpr.Create() ) {
+			*this = arpr;
+			return true;
+		}
+	}
+	return false;
 }
 
 bool IpRouteInfo::ChangeIpRoute(IpRouteInfo & ipr)
@@ -317,23 +895,6 @@ bool IpRouteInfo::ChangeIpRoute(IpRouteInfo & ipr)
 			return true;
 		}
 	}
-	return false;
-}
-
-// TODO:
-bool ArpRouteInfo::CreateArpRoute(void)
-{
-	LOG_ERROR("unsuported yet\n");
-	return false;
-}
-bool ArpRouteInfo::DeleteArpRoute(void)
-{
-	LOG_ERROR("unsuported yet\n");
-	return false;
-}
-bool ArpRouteInfo::ChangeArpRoute(ArpRouteInfo & arpr)
-{
-	LOG_ERROR("unsuported yet\n");
 	return false;
 }
 

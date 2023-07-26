@@ -1,6 +1,6 @@
 // https://habr.com/ru/articles/108690/
 
-#define MAX_CMD_LEN 512
+#define MAX_CMD_LEN 1024
 
 extern int RootExec(const char * cmd);
 

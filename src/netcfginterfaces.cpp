@@ -6,7 +6,6 @@
 #include <errno.h>
 
 #include "netcfgplugin.h"
-#include "netcfglng.h"
 #include "fardialog.h"
 
 #include <utils.h>

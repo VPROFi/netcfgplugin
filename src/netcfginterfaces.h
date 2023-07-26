@@ -8,7 +8,6 @@
 class NetcfgInterfaces : public FarPanel
 {
 private:
-	PanelIndex index;
 	std::unique_ptr<NetInterfaces> nifs;
 
 	bool change;
@@ -28,7 +27,7 @@ public:
 	int ProcessKey(HANDLE hPlugin, int key, unsigned int controlState, bool & change) override;
 	int GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber) override;
 	explicit NetcfgInterfaces(PanelIndex index);
-	~NetcfgInterfaces();
+	virtual ~NetcfgInterfaces();
 };
 
 

@@ -455,7 +455,7 @@ const RouteRecord * GetRoutes(void * nl, int family);
 const LinkRecord * GetLinks(void * nl);
 const AddrRecord * GetAddr(void *nl, int family);
 const RuleRecord * GetRules(void *nl, int family);
-const NeighborRecord * GetNeighbors(void *nl, int family);
+const NeighborRecord * GetNeighbors(void *nl, int family, int ndm_flags);
 /*
  * nla_type (16 bits)
  * +---+---+-------------------------------+
@@ -551,13 +551,22 @@ const char * rticmp6pref(uint8_t pref); // ICMPV6_ROUTER_PREF_
 
 int FillAttr(struct rtattr *rta, struct rtattr **tb, unsigned short max, unsigned short flagsmask, int len, const char * (*typeprint)(uint16_t type));
 
-#define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
-#define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+// Maximal IPv6 address length see https://dirask.com/posts/Maximal-IPv6-address-length-joz4Np
+#ifndef MAX_IP_SIZE
+#define MAX_IP_SIZE sizeof("ffff:ffff:ffff:ffff:ffff:ffff:192.168.100.100%wlxd123456789ab")
+#endif
+#ifndef MAX_INTERFACE_NAME_LEN
+#define MAX_INTERFACE_NAME_LEN 16
+#endif
 
-#define MAX_MPLS_LABELS 20
+
+#define MAX_GENEVE_OPTS_STRING 100
+#define MAX_ERSPAN_OPTS_STRING sizeof("256:4294967296:256:256")
+
+
+#define MAX_MPLS_LABELS_LEN 64
 #define MAX_GENEVE_OPTS 10
 #define MAX_GENEVE_OPTS_DATA 30
-
 
 typedef struct {
 	uint16_t cls;
@@ -565,15 +574,6 @@ typedef struct {
 	size_t size;
 	uint8_t data[MAX_GENEVE_OPTS_DATA];
 } Geneve;
-const char * genevestring(uint32_t total_geneves, Geneve * gen);
-
-typedef struct {
-	uint8_t ver;
-	uint32_t index;
-	uint8_t dir;
-	uint8_t hwid;
-} Erspan;
-const char * erspanstring(Erspan * er);
 
 typedef struct {
 	uint16_t type;
@@ -584,7 +584,7 @@ typedef struct {
 				unsigned char dst:1;
 			} valid;
 			uint8_t ttl;
-			uint32_t dst[MAX_MPLS_LABELS];
+			char dst[MAX_MPLS_LABELS_LEN+1];
 		} mpls;
 		struct {
 			struct {
@@ -612,20 +612,10 @@ typedef struct {
 				// ERSPAN (Encapsulated Remote Switched Port Analyzer) - это механизм мониторинга трафика в сети. 
 				// Он позволяет скопировать трафик с одного или нескольких портов коммутатора и перенаправить его на другой порт для анализа.
 				unsigned int erspan:1;
-				unsigned int erspan_ver:1;
-				unsigned int erspan_index:1;
-				unsigned int erspan_dir:1;
-				unsigned int erspan_hwid:1;
 			} valid;
 			uint64_t id;
-			union {
-				uint32_t ipv4;
-				uint8_t ipv6[sizeof(struct in6_addr)];
-			} dst;
-			union {
-				uint32_t ipv4;
-				uint8_t ipv6[sizeof(struct in6_addr)];
-			} src;
+			char dst[MAX_IP_SIZE];
+			char src[MAX_IP_SIZE];
 			uint8_t family;
 			uint8_t ttl;
 			uint8_t tos;
@@ -635,9 +625,10 @@ typedef struct {
 
 			uint16_t flags;
 			uint32_t vxlan_gbp;
-			uint32_t total_geneves;
-			Geneve geneve[MAX_GENEVE_OPTS];
-			Erspan erspan;
+
+			char geneve_opts[MAX_GENEVE_OPTS_STRING];
+			char erspan_opts[MAX_ERSPAN_OPTS_STRING];
+
 		} ip;
 	} data;
 } Encap;
@@ -652,7 +643,8 @@ const char * ndmsgstate(uint16_t state); // NUD_
 
 const char * lwtunnelencaptype(uint16_t type); // LWTUNNEL_ENCAP_
 const char * mplsiptunneltype(uint16_t type); //MPLS_IPTUNNEL_
-const char * mpls_ntop(const struct mpls_label *addr);
+
+void mpls_ntop(const struct mpls_label *addr, char * buf, size_t destlen);
 
 #ifndef RTNH_F_TRAP
 #define RTNH_F_TRAP 64

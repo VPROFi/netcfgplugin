@@ -34,9 +34,14 @@ public:
 
 	// towstr can use only for ASCII symbols
 	std::wstring towstr(const char * name) const;
+	std::string tostr(const wchar_t * name) const;
+
 	const wchar_t * DublicateCountString(int64_t value) const;
 	const wchar_t * DublicateFileSizeString(uint64_t value) const;
+
 	void GetPanelInfo(PanelInfo & pi);
+	const wchar_t * GetPanelTitle(void) const;
+
 	PluginPanelItem * GetPanelItem(intptr_t itemNum) const;
 	void FreePanelItem(PluginPanelItem * ppi) const;
 	PluginPanelItem * GetCurrentPanelItem(PanelInfo * piret = nullptr) const;
@@ -47,7 +52,7 @@ public:
 
 	FarPanel(uint32_t index);
 	FarPanel();
-	~FarPanel();
+	virtual ~FarPanel();
 };
 
 #endif /* __FARPANEL_H__ */

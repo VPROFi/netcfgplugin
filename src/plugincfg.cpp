@@ -32,8 +32,11 @@ const char * PluginCfg::GetPanelName(PanelIndex index)
 		"arp",		// RouteArpPanelIndex
 		"mcinet",	// RouteMcInetPanelIndex
 		"mcinet6",	// RouteMcInet6PanelIndex
+		"rule",	    // RouteRuleInetPanelIndex
+		"routetables", // RouteIpTablesPanelIndex
 		"max"		// RouteMcInet6PanelIndex
 	};
+	assert( index < (ARRAYSIZE(names)-1) );
 	return names[index];
 }
 
@@ -61,6 +64,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"7,15,7,17,0", L"7,15,17,25,0,0,0,0,0,0,0,0,0,17"},
 		{{L"ifc",L"ip",L"snd+rcv", L"mac", L"ipv6", 0}, {L"ifc",L"ip",L"mac", L"ipv6", L"mtu", L"rcv", L"snd", L"rpkts", L"spkts",L"rerr",L"serr",L"mcast",L"colls",L"permmac"}},
 		{0,MF2,MEmptyString,MF4,MF5,MF6,MEmptyString,MEmptyString,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkInterfacesTitle,
 		MFormatNetcfgPanel,
 		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE|OPIF_ADDDOTS
@@ -81,10 +85,11 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
 		#endif
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesTitle,
 		MFormatNetcfgPanel,
-		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
+		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE|OPIF_ADDDOTS
 		}},
 		{RouteInet6PanelIndex, {
 		L"N,C0,C1,C2,C3",
@@ -96,18 +101,20 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
 		#endif
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6RoutesArp,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6RoutesArp,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutes6Title,
 		MFormatNetcfgPanel,
-		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
+		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE|OPIF_ADDDOTS
 		}},
 		{RouteArpPanelIndex, {
 		L"N,C0,C1,C2,C3",
-		L"25,16,7,17,0",
+		L"0,18,7,10,9",
 		{L"N,C0,C1,C2,C3", L"N,C0,C1,C2,C3"},
-		{L"25,17,7,17,0", L"25,17,7,17,0"},
+		{L"0,18,7,10,9", L"0,18,7,10,9"},
 		{{L"to ip", L"mac", L"dev", L"type", L"state", 0}, {L"to ip", L"mac", L"dev", L"type", L"state", 0}},
 		{0,MF2,MEmptyString,MF4,MEmptyString,MF6McRoutes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesArpTitle,
 		MFormatNetcfgPanel,
 		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
@@ -122,10 +129,11 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
 		#endif
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6McRoutes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6McRoutes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutesTitle,
 		MFormatNetcfgPanel,
-		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
+		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE|OPIF_ADDDOTS
 		}},
 		{RouteMcInet6PanelIndex, {
 		L"N,C0,C1,C2,C3",
@@ -137,11 +145,40 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
 		#endif
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutes6Title,
+		MFormatNetcfgPanel,
+		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE|OPIF_ADDDOTS
+		}},
+		{RouteRuleInetPanelIndex, {
+		L"N,C0",
+		L"6,0",
+		// prio           N
+		// rule           C0
+		{L"N,C0", L"N,C0"},
+		{L"6,0", L"6,0"},
+		{{L"prio", L"rule", 0}, {L"prio", L"rule", 0}},
+		{0,MF2,MF3Routes,MF4,MEmptyString,MF6Next,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
+		MPanelNetworkRouteRulesTitle,
 		MFormatNetcfgPanel,
 		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
 		}},
+		{RouteIpTablesPanelIndex, {
+		L"N,C0",
+		L"10,0",
+		// name           N
+		// total          C0
+		{L"N,C0", L"N,C0"},
+		{L"10,0", L"10,0"},
+		{{L"Table:", L"Total routes:", 0}, {L"Table:", L"Total routes:", 0}},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Next,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
+		MPanelNetworkRouteRulesTitle,
+		MFormatNetcfgPanel,
+		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
+		}}
 		};
 
 void PluginCfg::ReloadPanelString(struct PanelData * data, PanelIndex index)
@@ -151,10 +188,18 @@ void PluginCfg::ReloadPanelString(struct PanelData * data, PanelIndex index)
 	auto keyBar = &data->keyBar.Titles[0];
 
 	for( auto item : cfg.keyBarTitles ) {
-		if( item < MMaxString )
+		if( item && item < MMaxString )
 			*keyBar = (TCHAR*)GetMsg(item);
 		keyBar++;
 	}
+
+	keyBar = &data->keyBar.ShiftTitles[0];
+	for( auto item : cfg.keyBarShiftTitles ) {
+		if( item && item < MMaxString )
+			*keyBar = (TCHAR*)GetMsg(item);
+		keyBar++;
+	}
+
 	data->openInfo.Format=(TCHAR*)GetMsg(cfg.format);
 	data->openInfo.PanelTitle=(TCHAR*)GetMsg(cfg.panelTitle);
 

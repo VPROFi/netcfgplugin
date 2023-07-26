@@ -17,7 +17,7 @@ typedef struct {
 	} data;
 } DlgConstructorItem;
 
-typedef struct {
+struct ItemChange {
 	unsigned int itemNum;
 	int type;
 	union {
@@ -29,7 +29,10 @@ typedef struct {
 		const wchar_t * ptrData;
 	} newVal;
 	std::wstring ptrData;
-} ItemChange;
+	bool empty;
+	explicit ItemChange(unsigned int itemNum, int type);
+	ItemChange(ItemChange && old);
+};
 
 enum {
 	WinSuffixSeparatorIndex,
@@ -79,6 +82,7 @@ class FarDlgConstructor {
 		void SetText(unsigned int itemNum, const wchar_t * text, bool dublicate=false);
 		void SetX(unsigned int itemNum, int x);
 		void SetCountText(unsigned int itemNum, int64_t value);
+		void SetCountHex32Text(unsigned int itemNum, uint32_t value, bool prefix = true);
 		void SetFileSizeText(unsigned int itemNum, uint64_t value);
 
 
@@ -95,6 +99,8 @@ void HideDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast)
 void UnhideDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);
 void DisableDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);
 void EnableDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);
+uint64_t GetNumberItem(HANDLE hDlg, unsigned int itemNum);
+std::wstring GetText(HANDLE hDlg, unsigned int itemNum);
 
 class FarDialog {
 	private:
@@ -110,6 +116,8 @@ class FarDialog {
 		const wchar_t * GetConstText(unsigned int itemNum);
 		int32_t GetInt32(unsigned int itemNum);
 		int64_t GetInt64(unsigned int itemNum);
+		int32_t GetInt32FromHex(unsigned int itemNum, bool prefix = true);
+		int64_t GetInt64FromHex(unsigned int itemNum, bool prefix = true);
 		bool GetCheck(unsigned int itemNum);
 		HANDLE GetDlg(void);
 };

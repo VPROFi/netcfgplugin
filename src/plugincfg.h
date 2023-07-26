@@ -4,6 +4,7 @@
 #include <farplug-wide.h>
 #include <farkeys.h>
 #include <map>
+#include "netcfglng.h"
 
 enum {
 	PanelModeBrief,
@@ -54,6 +55,16 @@ enum {
 	ArpRoutesColumnMaxIndex
 };
 
+enum {
+	RouteRuleColumnRuleIndex,
+	RouteRuleColumnMaxIndex
+};
+
+enum {
+	RouteIpTablesColumnTotalIndex,
+	RouteIpTablesColumnMaxIndex
+};
+
 typedef struct {
 	const wchar_t * statusColumnTypes;
 	const wchar_t * statusColumnWidths;
@@ -61,6 +72,7 @@ typedef struct {
 	const wchar_t * columnWidths[2];
 	const wchar_t * columnTitles[2][15];
 	uint32_t keyBarTitles[12];
+	uint32_t keyBarShiftTitles[12];
 	uint32_t panelTitle;
 	uint32_t format;
 	uint32_t flags;
@@ -73,6 +85,8 @@ typedef enum {
 	RouteArpPanelIndex,
 	RouteMcInetPanelIndex,
 	RouteMcInet6PanelIndex,
+	RouteRuleInetPanelIndex,
+	RouteIpTablesPanelIndex,
 	MaxPanelIndex
 } PanelIndex;
 

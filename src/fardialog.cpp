@@ -49,6 +49,14 @@ void FarDlgConstructor::SetCountText(unsigned int itemNum, int64_t value)
 	return;
 }
 
+void FarDlgConstructor::SetCountHex32Text(unsigned int itemNum, uint32_t value, bool prefix)
+{
+	wchar_t maxhex32[sizeof("0xFFFFFFFF")] = {0};
+	if( NetCfgPlugin::FSF.snprintf(maxhex32, ARRAYSIZE(maxhex32), prefix ? L"0x%08X":L"%08X", value) > 0 )
+		SetText(itemNum, maxhex32, true);
+	return;
+}
+
 void FarDlgConstructor::SetFileSizeText(unsigned int itemNum, uint64_t value)
 {
 	if( value > 100 * 1024 ) {
@@ -289,43 +297,70 @@ int FarDialog::Run(void)
 	return NetCfgPlugin::psi.DialogRun(hDlg);
 }
 
+
+ItemChange::ItemChange(unsigned int itemNum_, int type_): itemNum(itemNum_), type(type_)
+{
+	const wchar_t * const empty_string = L"";
+	oldVal.ptrData = nullptr;
+	ptrData = empty_string;
+	empty = true;
+	if( type == DI_BUTTON )
+		newVal.ptrData = ptrData.c_str();
+	else
+		newVal.ptrData = nullptr;
+}
+
+ItemChange::ItemChange(ItemChange && old)
+{
+	itemNum = old.itemNum;
+	type = old.type;
+	empty = old.empty;
+	oldVal.ptrData = old.oldVal.ptrData;
+	ptrData = std::move(old.ptrData);
+	if( type == DI_BUTTON )
+		newVal.ptrData = ptrData.c_str();
+	else
+		newVal.ptrData = old.newVal.ptrData;
+}
+
 bool FarDialog::CreateChangeList(std::vector<ItemChange> & chlst)
 {
 	bool change = false;
 	unsigned int itemNum = 0;
 	for( auto & item : *fdc ) {
-		bool localchg = false;
-		ItemChange ich = {itemNum, item.Type, {0}, {0}, L""};
+		ItemChange ich(itemNum, item.Type);
 		//LOG_INFO("itemNum: %u text: %S item.Type %d total: %d\n", itemNum, item.PtrData ? item.PtrData:L"NONE", item.Type, fdc->GetNumberOfItems());
 		switch(item.Type) {
 		case DI_BUTTON:
 			ich.oldVal.ptrData = item.PtrData;
 			ich.ptrData = GetText(itemNum);
 			ich.newVal.ptrData = ich.ptrData.c_str();
+			ich.empty = ich.ptrData.empty();
 			if( NetCfgPlugin::FSF.LStricmp(ich.newVal.ptrData, ich.oldVal.ptrData) ) {
-				LOG_INFO("DI_BUTTON: change from: %S to %S\n", ich.oldVal.ptrData, ich.newVal.ptrData);
-				localchg = true;
+				LOG_INFO("%u. DI_BUTTON: change from: %S to %S\n", itemNum, ich.oldVal.ptrData, ich.newVal.ptrData);
+				change = true;
+				chlst.push_back(std::move(ich));
 			}
 			break;
 		case DI_CHECKBOX:
+		case DI_RADIOBUTTON:
 			ich.oldVal.Selected = item.Selected;
 			ich.newVal.Selected = GetCheck(itemNum);
-			if( ich.newVal.Selected != ich.oldVal.Selected )
-				localchg = true;
+			if( ich.newVal.Selected != ich.oldVal.Selected ) {
+				change = true;
+				chlst.push_back(std::move(ich));
+			}
 			break;
 		case DI_EDIT:
 			ich.oldVal.ptrData = item.PtrData;
 			ich.newVal.ptrData = GetConstText(itemNum);
+			ich.empty = (wcslen(ich.newVal.ptrData) == 0);
 			if( NetCfgPlugin::FSF.LStricmp(ich.newVal.ptrData, ich.oldVal.ptrData) ) {
-				LOG_INFO("DI_EDIT: change from: %S to %S\n", ich.oldVal.ptrData, ich.newVal.ptrData);
-				localchg = true;
+				LOG_INFO("%u. DI_EDIT: change from: %S to %S\n", itemNum, ich.oldVal.ptrData, ich.newVal.ptrData);
+				change = true;
+				chlst.push_back(std::move(ich));
 			}
 			break;
-		}
-
-		if( localchg ) {
-			change = localchg;
-			chlst.push_back(std::move(ich));
 		}
 		itemNum++;
 	}
@@ -362,6 +397,18 @@ int32_t FarDialog::GetInt32(unsigned int itemNum)
 int64_t FarDialog::GetInt64(unsigned int itemNum)
 {
 	return NetCfgPlugin::FSF.atoi64(GetConstText(itemNum));
+}
+
+int64_t FarDialog::GetInt64FromHex(unsigned int itemNum, bool prefix)
+{
+	unsigned long long ofs = 0;
+	NetCfgPlugin::FSF.sscanf(GetConstText(itemNum), prefix ? L"0x%llx":L"%llx", &ofs);
+	return ofs;
+}
+
+int32_t FarDialog::GetInt32FromHex(unsigned int itemNum, bool prefix)
+{
+	return (int32_t)GetInt64FromHex(itemNum, prefix);
 }
 
 HANDLE FarDialog::GetDlg(void)
@@ -411,4 +458,27 @@ void DisableDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLa
 void EnableDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast)
 {
 	ChangeDialogItemsView(hDlg, itemFirst, itemLast, false, false);
+}
+
+uint64_t GetNumberItem(HANDLE hDlg, unsigned int itemNum)
+{
+	size_t len = NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETTEXTLENGTH, itemNum, 0);
+	if( len ) {
+		auto buf = std::make_unique<wchar_t[]>(len+1);
+		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETTEXTPTR, itemNum, (ULONG_PTR)buf.get());
+		return NetCfgPlugin::FSF.atoi64(buf.get());
+	}
+	return 0;
+}
+
+std::wstring GetText(HANDLE hDlg, unsigned int itemNum)
+{
+	std::wstring text;
+	size_t len = NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETTEXTLENGTH, itemNum, 0);
+	if( len ) {
+		auto buf = std::make_unique<wchar_t[]>(len+1);
+		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETTEXTPTR, itemNum, (ULONG_PTR)buf.get());
+		text = buf.get();
+	}
+	return text;
 }

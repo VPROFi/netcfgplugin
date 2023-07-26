@@ -9,15 +9,15 @@
 #include "netcfgroutes.h"
 #include "netcfginterfaces.h"
 
-//#include <farplug-wide.h>
-
-
 struct PluginUserData {
 	DWORD size;
 	union {
 		NetInterface * net_if;
 		IpRouteInfo * inet;
 		ArpRouteInfo * arp;
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		RuleRouteInfo * rule;
+#endif
 	} data;
 };
 

@@ -131,23 +131,22 @@ const char * tunnelflagsname(uint16_t flags)
 {
 	static char buf[sizeof("csum, routing, key, seq, strict, rec, version, no key, dont fragment, oam, crit opt, geneve opt, vxlan opt, nocache, erspan opt, gtp opt")] = {0};
 	buf[0] = '\0';
-	flags = addflag(buf, "csum", flags, TUNNEL_CSUM);
-	flags = addflag(buf, "routing", flags, TUNNEL_ROUTING);
-	flags = addflag(buf, "key", flags, TUNNEL_KEY);
-	flags = addflag(buf, "seq", flags, TUNNEL_SEQ);
-	flags = addflag(buf, "strict", flags, TUNNEL_STRICT);
-	flags = addflag(buf, "rec", flags, TUNNEL_REC);
-	flags = addflag(buf, "version", flags, TUNNEL_VERSION);
-	flags = addflag(buf, "no key", flags, TUNNEL_NO_KEY);
-	flags = addflag(buf, "dont fragment", flags, TUNNEL_DONT_FRAGMENT);
-	flags = addflag(buf, "oam", flags, TUNNEL_OAM);
-	flags = addflag(buf, "crit_opts", flags, TUNNEL_CRIT_OPT);
-	flags = addflag(buf, "geneve_opts", flags, TUNNEL_GENEVE_OPT);
-	flags = addflag(buf, "vxlan_opts", flags, TUNNEL_VXLAN_OPT);
-	flags = addflag(buf, "nocache", flags, TUNNEL_NOCACHE);
-	flags = addflag(buf, "erspan_opts", flags, TUNNEL_ERSPAN_OPT);
-	flags = addflag(buf, "gtp_opts", flags, TUNNEL_GTP_OPT);
-
+	flags = addflag_space_separator(buf, "csum", flags, TUNNEL_CSUM);
+	flags = addflag_space_separator(buf, "routing", flags, TUNNEL_ROUTING);
+	flags = addflag_space_separator(buf, "key", flags, TUNNEL_KEY);
+	flags = addflag_space_separator(buf, "seq", flags, TUNNEL_SEQ);
+	flags = addflag_space_separator(buf, "strict", flags, TUNNEL_STRICT);
+	flags = addflag_space_separator(buf, "rec", flags, TUNNEL_REC);
+	flags = addflag_space_separator(buf, "version", flags, TUNNEL_VERSION);
+	flags = addflag_space_separator(buf, "no key", flags, TUNNEL_NO_KEY);
+	flags = addflag_space_separator(buf, "dont fragment", flags, TUNNEL_DONT_FRAGMENT);
+	flags = addflag_space_separator(buf, "oam", flags, TUNNEL_OAM);
+	flags = addflag_space_separator(buf, "crit_opts", flags, TUNNEL_CRIT_OPT);
+	flags = addflag_space_separator(buf, "nocache", flags, TUNNEL_NOCACHE);
+	flags = addflag_space_separator(buf, "gtp_opts", flags, TUNNEL_GTP_OPT);
+	flags = addflag_space_separator(buf, "geneve_opts", flags, TUNNEL_GENEVE_OPT);
+	flags = addflag_space_separator(buf, "vxlan_opts", flags, TUNNEL_VXLAN_OPT);
+	flags = addflag_space_separator(buf, "erspan_opts", flags, TUNNEL_ERSPAN_OPT);
 	return buf;
 }
 
@@ -666,11 +665,8 @@ const char * ip6tunneltype( uint16_t type )
  */
 // MPLS (Multi Protocol Label Switching) - это технология маршрутизации по меткам
 // https://ru.wikipedia.org/wiki/MPLS
-const char * mpls_ntop(const struct mpls_label *addr)
+void mpls_ntop(const struct mpls_label *addr, char * buf, size_t destlen)
 {
-        static char buf[64] = {0};
-	
-	size_t destlen = sizeof(buf);
 	char *dest = buf;
 	int count = 0;
 
@@ -683,7 +679,7 @@ const char * mpls_ntop(const struct mpls_label *addr)
 			break;
 
 		if (entry & MPLS_LS_S_MASK)
-			return buf;
+			return;
 
 		dest += len;
 		destlen -= len;
@@ -694,7 +690,7 @@ const char * mpls_ntop(const struct mpls_label *addr)
 		}
 	}
 	errno = -E2BIG;
-	return NULL;
+	return;
 }
 
 
@@ -1237,54 +1233,42 @@ int FillAttr(struct rtattr *rta, struct rtattr **tb, unsigned short max, unsigne
 }
 
 #define MAX_INETADR_LEN (INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN)
-#define MAX_GENEVE_STRING_LEN 256
 
-const char * genevestring(uint32_t total_geneves, Geneve * gen)
+static void genevetostring(uint32_t total_geneves, Geneve * gen, char * buffer, size_t size)
 {
-	static char buffer[MAX_GENEVE_STRING_LEN];
 	char * ptr = buffer;
-	size_t size = sizeof(buffer);
-
 	while( total_geneves-- ) {
 		int res = 0;
 		size_t index = 0;
 
-		if( (res = snprintf(ptr, size, "%u:", gen->cls)) < 0 )
-			return buffer;
+		if( (res = snprintf(ptr, size, "%u:", gen->cls)) < 0 || size < res )
+			break;
 		ptr += res;
 		size -= res;
 
 
-		if( (res = snprintf(ptr, size, "%u:", gen->type)) < 0 )
-			return buffer;
+		if( (res = snprintf(ptr, size, "%u:", gen->type)) < 0 || size < res )
+			break;
 		ptr += res;
 		size -= res;
 
 		while( index < gen->size ) {
-			if( (res = snprintf(ptr, size, "%02x", gen->data[index])) < 0 )
-				return buffer;
+			if( (res = snprintf(ptr, size, "%02x", gen->data[index])) < 0 || size < res )
+				return;
 			ptr += res;
 			size -= res;
 			index++;
 		}
 
-		if( total_geneves && (res = snprintf(ptr, size, ",")) < 0 )
-			return buffer;
+		if( total_geneves && ((res = snprintf(ptr, size, ",")) < 0 || size < res) )
+			break;
 
 		ptr += res;
 		size -= res;
 
 		gen++;
 	}
-	return buffer;
-}
-
-const char * erspanstring(Erspan * er)
-{
-	static char buffer[sizeof("256:4294967296:256:256")];
-	if( snprintf(buffer, sizeof(buffer), "%u:%u:%u:%u", er->ver, er->index, er->dir, er->hwid) > 0 )
-		return buffer;
-	return "";
+	return;
 }
 
 static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
@@ -1307,25 +1291,22 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 		return FALSE;
 
 	if( ip[LWTUNNEL_IP_ID] && RTA_PAYLOAD(ip[LWTUNNEL_IP_ID]) >= sizeof(uint64_t) ) {
-		enc->data.ip.id = RTA_UINT64_T(ip[LWTUNNEL_IP_ID]);
+		enc->data.ip.id = ntohll(RTA_UINT64_T(ip[LWTUNNEL_IP_ID]));
 		enc->data.ip.valid.id = 1;
-		LOG_INFO("LWTUNNEL_IP_ID:  " LLFMT "\n", ntohll(enc->data.ip.id));
+		LOG_INFO("LWTUNNEL_IP_ID:  " LLFMT "\n", enc->data.ip.id);
 	}
 
 	if( ip[LWTUNNEL_IP_DST] && RTA_PAYLOAD(ip[LWTUNNEL_IP_DST]) >= addrlen ) {
-		memmove(&enc->data.ip.dst, RTA_DATA(ip[LWTUNNEL_IP_DST]), addrlen);
-		enc->data.ip.valid.dst = 1;
-		if( inet_ntop(family, &enc->data.ip.dst, s, MAX_INETADR_LEN) )
-			LOG_INFO("LWTUNNEL_IP_DST:  %s\n", s);
+		if( inet_ntop(family, RTA_DATA(ip[LWTUNNEL_IP_DST]), enc->data.ip.dst, sizeof(enc->data.ip.dst)) )
+			enc->data.ip.valid.dst = 1;
+		LOG_INFO("LWTUNNEL_IP_DST:  %s\n", enc->data.ip.dst);
 	}
 
 	if( ip[LWTUNNEL_IP_SRC] && RTA_PAYLOAD(ip[LWTUNNEL_IP_SRC]) >= addrlen ) {
-		memmove(&enc->data.ip.src, RTA_DATA(ip[LWTUNNEL_IP_SRC]), addrlen);
-		enc->data.ip.valid.src = 1;
-		if( inet_ntop(family, &enc->data.ip.src, s, MAX_INETADR_LEN) )
-			LOG_INFO("LWTUNNEL_IP_SRC:  %s\n", s);
+		if( inet_ntop(family, RTA_DATA(ip[LWTUNNEL_IP_DST]), enc->data.ip.src, sizeof(enc->data.ip.src)) )
+			enc->data.ip.valid.src = 1;
+		LOG_INFO("LWTUNNEL_IP_SRC:  %s\n", enc->data.ip.src);
 	}
-
 
 	static_assert( (int)LWTUNNEL_IP6_HOPLIMIT == (int)LWTUNNEL_IP_TTL, "unsupported LWTUNNEL_IP6_HOPLIMIT" );
 	if( ip[LWTUNNEL_IP_TTL] && RTA_PAYLOAD(ip[LWTUNNEL_IP_TTL]) >= sizeof(uint8_t) ) {
@@ -1375,8 +1356,9 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 				struct rtattr * geneve[LWTUNNEL_IP_OPT_GENEVE_MAX+1] = {0};
 
 				enc->data.ip.valid.geneve = 1;
-				memset(enc->data.ip.geneve, 0, sizeof(enc->data.ip.geneve));
-				enc->data.ip.total_geneves = 0;
+
+				uint32_t total_geneves = 0;
+				Geneve geneve_opts[MAX_GENEVE_OPTS] = {0};
 
 				while( RTA_OK(rta, rest) ) {
 					unsigned short type = rta->rta_type & (~NLA_F_NESTED);
@@ -1384,37 +1366,37 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 					if( type <= LWTUNNEL_IP_OPT_GENEVE_MAX && !geneve[type] )
 						geneve[type] = rta;
 
-					if(     enc->data.ip.total_geneves < MAX_GENEVE_OPTS && \
+					if(     total_geneves < MAX_GENEVE_OPTS && \
 						geneve[LWTUNNEL_IP_OPT_GENEVE_CLASS] && \
 						geneve[LWTUNNEL_IP_OPT_GENEVE_TYPE] && \
 						geneve[LWTUNNEL_IP_OPT_GENEVE_DATA] ) {
 
-						Geneve * g = &enc->data.ip.geneve[enc->data.ip.total_geneves];
+						Geneve * g = &geneve_opts[total_geneves];
+
 						g->size = (size_t)RTA_PAYLOAD(geneve[LWTUNNEL_IP_OPT_GENEVE_DATA]);
 						g->size = g->size < sizeof(g->data) ? g->size:sizeof(g->data);
 
 						if( RTA_PAYLOAD(geneve[LWTUNNEL_IP_OPT_GENEVE_CLASS]) >= sizeof(uint16_t) ) {
 							g->cls = ntohs(RTA_UINT16_T(geneve[LWTUNNEL_IP_OPT_GENEVE_CLASS]));
-							LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_CLASS: %u\n", enc->data.ip.total_geneves, g->cls);
+							LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_CLASS: %u\n", total_geneves, g->cls);
 						}
 
 						if( RTA_PAYLOAD(geneve[LWTUNNEL_IP_OPT_GENEVE_TYPE]) >= sizeof(uint8_t) ) {
 							g->type = RTA_UINT8_T(geneve[LWTUNNEL_IP_OPT_GENEVE_TYPE]);
-							LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_TYPE: %u\n", enc->data.ip.total_geneves, g->type);
+							LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_TYPE: %u\n", total_geneves, g->type);
 						}
 
 						memmove(g->data, RTA_DATA(geneve[LWTUNNEL_IP_OPT_GENEVE_DATA]), g->size);
-						LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_DATA: %02X%02X%02X\n", enc->data.ip.total_geneves, g->data[0], g->data[1], g->data[2]);
+						LOG_INFO("%d. LWTUNNEL_IP_OPT_GENEVE_DATA: %02X%02X%02X\n", total_geneves, g->data[0], g->data[1], g->data[2]);
 
 						memset(geneve, 0, sizeof(geneve));
-						enc->data.ip.total_geneves++;
+						total_geneves++;
 					}
 
 					rta = RTA_NEXT(rta, rest);
 				}
-
-				LOG_INFO("geneve_opts %s\n", genevestring(enc->data.ip.total_geneves, enc->data.ip.geneve));
-
+				genevetostring(total_geneves, geneve_opts, enc->data.ip.geneve_opts, sizeof(enc->data.ip.geneve_opts));
+				LOG_INFO("geneve_opts %s\n", enc->data.ip.geneve_opts);
 			}
 			if( opts[LWTUNNEL_IP_OPTS_VXLAN] ) {
 				struct rtattr * vxlan[LWTUNNEL_IP_OPT_VXLAN_MAX+1];
@@ -1435,7 +1417,14 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 			if( opts[LWTUNNEL_IP_OPTS_ERSPAN] ) {
 				struct rtattr * erspan[LWTUNNEL_IP_OPT_ERSPAN_MAX+1];
 				enc->data.ip.valid.erspan = 1;
-				memset(&enc->data.ip.erspan, 0, sizeof(enc->data.ip.erspan));
+
+				struct {
+					uint8_t ver;
+					uint32_t index;
+					uint8_t dir;
+					uint8_t hwid;
+				} er = {0};
+
 				if( FillAttr((struct rtattr*)RTA_DATA(opts[LWTUNNEL_IP_OPTS_ERSPAN]),
 					erspan,
 					LWTUNNEL_IP_OPT_ERSPAN_MAX,
@@ -1444,30 +1433,28 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 					iptunneloptserspantype) ) {
 
 					if( erspan[LWTUNNEL_IP_OPT_ERSPAN_VER] && RTA_PAYLOAD(erspan[LWTUNNEL_IP_OPT_ERSPAN_VER]) >= sizeof(uint8_t) ) {
-						enc->data.ip.valid.erspan_ver = 1;
-						enc->data.ip.erspan.ver = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_VER]);
-						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_VER: %u\n", enc->data.ip.erspan.ver);
+						er.ver = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_VER]);
+						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_VER: %u\n", er.ver);
 					}
 
 					if( erspan[LWTUNNEL_IP_OPT_ERSPAN_INDEX] && RTA_PAYLOAD(erspan[LWTUNNEL_IP_OPT_ERSPAN_INDEX]) >= sizeof(uint32_t) ) {
-						enc->data.ip.valid.erspan_index = 1;
-						enc->data.ip.erspan.index = ntohl(RTA_UINT32_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_INDEX]));
-						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_INDEX: %u\n", enc->data.ip.erspan.index);
+						er.index = ntohl(RTA_UINT32_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_INDEX]));
+						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_INDEX: %u\n", er.index);
 					}
 
 					if( erspan[LWTUNNEL_IP_OPT_ERSPAN_DIR] && RTA_PAYLOAD(erspan[LWTUNNEL_IP_OPT_ERSPAN_DIR]) >= sizeof(uint8_t) ) {
-						enc->data.ip.valid.erspan_dir = 1;
-						enc->data.ip.erspan.dir = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_DIR]);
-						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_DIR: %u\n", enc->data.ip.erspan.dir);
+						er.dir = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_DIR]);
+						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_DIR: %u\n", er.dir);
 					}
 
 					if( erspan[LWTUNNEL_IP_OPT_ERSPAN_HWID] && RTA_PAYLOAD(erspan[LWTUNNEL_IP_OPT_ERSPAN_HWID]) >= sizeof(uint8_t) ) {
-						enc->data.ip.valid.erspan_hwid = 1;
-						enc->data.ip.erspan.hwid = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_HWID]);
-						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_HWID: %u\n", enc->data.ip.erspan.hwid);
+						er.hwid = RTA_UINT8_T(erspan[LWTUNNEL_IP_OPT_ERSPAN_HWID]);
+						LOG_INFO("LWTUNNEL_IP_OPT_ERSPAN_HWID: %u\n", er.hwid);
 					}
 				}
-				LOG_INFO("erspan_opts %s\n", erspanstring(&enc->data.ip.erspan));
+
+				snprintf(enc->data.ip.erspan_opts, sizeof(enc->data.ip.erspan_opts), "%u:%u:%u:%u", er.ver, er.index, er.dir, er.hwid);
+				LOG_INFO("erspan_opts %s\n", enc->data.ip.erspan_opts);
 			}
 		}
 	}
@@ -1490,13 +1477,9 @@ int FillEncap(Encap * enc, struct rtattr * rta)
 			RTA_PAYLOAD(rta),
 			mplsiptunneltype) ) {
 			if( mpls[MPLS_IPTUNNEL_DST] && RTA_PAYLOAD(mpls[MPLS_IPTUNNEL_DST]) >= sizeof(uint32_t) ) {
-				int size = RTA_PAYLOAD(mpls[MPLS_IPTUNNEL_DST]);
-				if( size <= sizeof(enc->data.mpls.dst) ) {
-					memmove(enc->data.mpls.dst, RTA_DATA(mpls[MPLS_IPTUNNEL_DST]), size);
-					enc->data.mpls.valid.dst = 1;
-					LOG_INFO("MPLS_IPTUNNEL_DST: %s\n", mpls_ntop((const struct mpls_label *)enc->data.mpls.dst));
-				} else
-					LOG_ERROR("MPLS_IPTUNNEL_DST: to big\n");
+				mpls_ntop((const struct mpls_label *)RTA_DATA(mpls[MPLS_IPTUNNEL_DST]), enc->data.mpls.dst, sizeof(enc->data.mpls.dst)-1);
+				enc->data.mpls.valid.dst = 1;
+				LOG_INFO("MPLS_IPTUNNEL_DST: %s\n", enc->data.mpls.dst);
 			}
 			if( mpls[MPLS_IPTUNNEL_TTL] && RTA_PAYLOAD(mpls[MPLS_IPTUNNEL_TTL]) >= sizeof(uint8_t) ) {
 				enc->data.mpls.ttl = RTA_UINT8_T(mpls[MPLS_IPTUNNEL_TTL]);
@@ -1870,7 +1853,7 @@ const RuleRecord * GetRules(void *nl, int family)
 	return (const RuleRecord *)GetInfo(ctx, ProcessRuleMsgs);
 }
 
-const NeighborRecord * GetNeighbors(void *nl, int family)
+const NeighborRecord * GetNeighbors(void *nl, int family, int ndm_flags)
 {
 	netlink_ctx * ctx = (netlink_ctx *)nl;
 	struct ndmsg *ndm =(struct ndmsg *)NLMSG_DATA(ctx->buf);
@@ -1886,6 +1869,7 @@ const NeighborRecord * GetNeighbors(void *nl, int family)
 	ctx->nlh->nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
 
 	ndm->ndm_family = family;
+	ndm->ndm_flags = ndm_flags;
 
 	return (const NeighborRecord *)GetInfo(ctx, ProcessNeighborMsgs);
 }
@@ -1910,7 +1894,8 @@ int main(int argc, char * argv[])
 		//ar = GetAddr(netlink, AF_INET);
 		//ar = GetAddr(netlink, AF_INET6);
 		r = GetRules(netlink, AF_UNSPEC);
-		nb = GetNeighbors(netlink, AF_UNSPEC);
+		nb = GetNeighbors(netlink, AF_UNSPEC, 0);
+		nb = GetNeighbors(netlink, AF_UNSPEC, NTF_PROXY);
 		CloseNetlink(netlink);
 	}
 #endif

@@ -112,6 +112,11 @@ void FarPanel::GetOpenPluginInfo(struct OpenPluginInfo * info)
 	*info = data->openInfo;
 }
 
+const wchar_t * FarPanel::GetPanelTitle(void) const
+{
+	return data->openInfo.PanelTitle;
+}
+
 void FarPanel::FreeFindData(struct PluginPanelItem * panelItem, int itemsNumber)
 {
 	LOG_INFO("\n");
@@ -131,6 +136,12 @@ std::wstring FarPanel::towstr(const char * name) const
 {
 	std::string _s(name);
 	return std::wstring(_s.begin(), _s.end());
+}
+
+std::string FarPanel::tostr(const wchar_t * name) const
+{
+	std::wstring _s(name);
+	return std::string(_s.begin(), _s.end());
 }
 
 const wchar_t * FarPanel::DublicateCountString(int64_t value) const

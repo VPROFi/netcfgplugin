@@ -230,12 +230,18 @@ const char * ipfamilyname(char family)
 		return "inet";
 	case AF_INET6:
 		return "inet6";
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	case AF_PACKET:
+#else
+	case AF_LINK:
+#endif
 		return "link";
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	case AF_MPLS:
 		return "mpls";
 	case AF_BRIDGE:
 		return "bridge";
+#endif
 	};
 	return familyname(family);
 }
@@ -565,6 +571,16 @@ uint32_t addflag(char * buf, const char * name, uint32_t flags, uint32_t flag)
 		strcat(buf, name);
 		if( (flags &= ~flag) )
 			strcat(buf, ", ");
+	}
+	return flags;
+}
+
+uint32_t addflag_space_separator(char * buf, const char * name, uint32_t flags, uint32_t flag)
+{
+	if( flags & flag ) {
+		strcat(buf, name);
+		if( (flags &= ~flag) )
+			strcat(buf, " ");
 	}
 	return flags;
 }

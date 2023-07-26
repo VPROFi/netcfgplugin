@@ -5,7 +5,7 @@ project(netcfg)
 get_directory_property(PROJECT_SOURCE_DIR DIRECTORY ../ DEFINITION PROJECT_SOURCE_DIR)
 get_directory_property(INSTALL_DIR DIRECTORY ${PROJECT_SOURCE_DIR} DEFINITION INSTALL_DIR)
 
-message("netcfgplugin PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+message("netcfgplugin PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR} ${CMAKE_SYSTEM_NAME}")
 
 set(SOURCES
 netcfgplugin.cpp
@@ -17,15 +17,27 @@ fardialog.cpp
 netcfgplugin.cpp
 netcfginterfaces.cpp
 netcfgroutes.cpp
+netcfgiproutes.cpp
+netcfgarp.cpp
 farpanel.cpp
+netfarpanel.cpp
 plugincfg.cpp
 farconnect.cpp
 common/errname.c
 common/log.c
 common/netutils.c
-common/netlink.c
 common/sizestr.c
 )
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+set(SOURCES
+${SOURCES}
+netcfgiptables.cpp
+netcfgrules.cpp
+netcfgarp.cpp
+common/netlink.c
+)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 17)

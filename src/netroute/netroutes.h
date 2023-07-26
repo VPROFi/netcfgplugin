@@ -37,8 +37,9 @@ struct NetRoutes {
 protected:
 	bool UpdateByProcNet(void);
 	bool UpdateByNetlink(void);
+	bool UpdateNeigbours(const NeighborRecord * nb);
 private:
-	bool SetNameByIndex(const char *ifname, uint32_t index);
+	void SetNameByIndex(const char *ifname, uint32_t index);
 	bool UpdateByNetlink(void * netlink, unsigned char af_family);
 #endif
 };

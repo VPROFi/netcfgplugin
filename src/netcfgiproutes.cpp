@@ -1079,9 +1079,7 @@ int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState
 		change = true;
 		return TRUE;
 	}
-	#endif
 
-	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	switch( panel ) {
 	case PanelRules:
 		return rule->ProcessKey(hPlugin, key, controlState, change);

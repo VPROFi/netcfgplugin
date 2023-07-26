@@ -83,10 +83,12 @@ typedef enum {
 	RouteInetPanelIndex,
 	RouteInet6PanelIndex,
 	RouteArpPanelIndex,
+	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	RouteMcInetPanelIndex,
 	RouteMcInet6PanelIndex,
 	RouteRuleInetPanelIndex,
 	RouteIpTablesPanelIndex,
+	#endif
 	MaxPanelIndex
 } PanelIndex;
 

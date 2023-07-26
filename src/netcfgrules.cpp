@@ -552,7 +552,7 @@ bool NetcfgIpRule::EditRule(void)
 			new_r = *r;
 			if( FillNewIpRule() )
 				change = r->ChangeRule(new_r);
-			r == nullptr;
+			r = nullptr;
 		}
 		FreePanelItem(ppi);
 	}

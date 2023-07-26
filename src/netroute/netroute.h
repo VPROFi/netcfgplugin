@@ -179,6 +179,27 @@ struct ArpRouteInfo {
 	uint32_t flags;
 	uint32_t sa_family;
 	uint32_t ifnameIndex;
+
+	struct {
+		unsigned int iface:1;
+		unsigned int ip:1;
+		unsigned int mac:1;
+		unsigned int flags:1;
+		unsigned int ifnameIndex:1;
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		unsigned int state:1;
+		unsigned int vlan:1;
+		unsigned int port:1;
+		unsigned int protocol:1;
+		unsigned int type:1;
+		unsigned int nh_id:1;
+		unsigned int flags_ext:1;
+		unsigned int vni:1;
+		unsigned int master:1;
+		unsigned int probes:1;
+		unsigned int ci:1;
+#endif
+	} valid;
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	uint32_t probes;
 	uint32_t hwType;
@@ -192,24 +213,6 @@ struct ArpRouteInfo {
 	uint32_t vni;
 	uint32_t master;
 	struct arproute_cacheinfo ci;
-	struct {
-		unsigned int iface:1;
-		unsigned int ip:1;
-		unsigned int mac:1;
-		unsigned int state:1;
-		unsigned int vlan:1;
-		unsigned int port:1;
-		unsigned int protocol:1;
-		unsigned int type:1;
-		unsigned int nh_id:1;
-		unsigned int flags_ext:1;
-		unsigned int vni:1;
-		unsigned int master:1;
-		unsigned int flags:1;
-		unsigned int probes:1;
-		unsigned int ifnameIndex:1;
-		unsigned int ci:1;
-	} valid;
 	void LogCacheInfo(void) const;
 #endif
 	bool Create(void);

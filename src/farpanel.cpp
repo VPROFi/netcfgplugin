@@ -98,7 +98,7 @@ int FarPanel::SelectNum(HANDLE hDlg, const wchar_t ** elements, int count, const
 	auto index = Select(hDlg, elements, count, setIndex);
 	if( index == (count-1) ) {
 		static wchar_t num[sizeof("4294967296")] = {0};
-		auto res = NetCfgPlugin::psi.InputBox(L"Enter number:", subTitle, 0, 0, num, ARRAYSIZE(num), 0, FIB_NOUSELASTHISTORY);
+		NetCfgPlugin::psi.InputBox(L"Enter number:", subTitle, 0, 0, num, ARRAYSIZE(num), 0, FIB_NOUSELASTHISTORY);
 		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETTEXTPTR, setIndex, (LONG_PTR)num);
 		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_REDRAW, 0, 0);
 	}

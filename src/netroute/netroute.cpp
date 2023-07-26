@@ -70,21 +70,6 @@ ArpRouteInfo::~ArpRouteInfo()
 //	LOG_INFO("\n");
 }
 
-RuleRouteInfo::RuleRouteInfo()
-{
-	type = 0;
-	table = 0;
-	flags = 0;
-	protocol = 0;
-	ip_protocol = 0;
-	valid = {0};
-}
-
-RuleRouteInfo::~RuleRouteInfo()
-{
-
-}
-
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 const char * IpRouteInfo::GetEncap(const Encap & enc) const
 {
@@ -323,6 +308,21 @@ static std::wstring towstr(const char * name)
 {
 	std::string _s(name);
 	return std::wstring(_s.begin(), _s.end());
+}
+
+RuleRouteInfo::RuleRouteInfo()
+{
+	type = 0;
+	table = 0;
+	flags = 0;
+	protocol = 0;
+	ip_protocol = 0;
+	valid = {0};
+}
+
+RuleRouteInfo::~RuleRouteInfo()
+{
+
 }
 
 void RuleRouteInfo::ToRuleString(bool skipExtInfo)

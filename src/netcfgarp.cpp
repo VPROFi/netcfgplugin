@@ -111,8 +111,10 @@ enum {
 	WinEditArpFamilyButtonIndex,
 	WinEditArpIpTextIndex,
 	WinEditArpIpEditIndex,
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	WinEditArpProxyCheckboxIndex,
 	WinEditArpProxyCheckboxStoreIndex,
+#endif
 	WinEditArpMacTextIndex,
 	WinEditArpMacEditIndex,
 
@@ -121,6 +123,7 @@ enum {
 	WinEditArpIfaceTextIndex,
 	WinEditArpIfaceButtonIndex,
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	WinEditArpNoRadiobuttonIndex,
 	WinEditArpUseRadiobuttonIndex,
 	WinEditArpManagedRadiobuttonIndex,
@@ -134,6 +137,7 @@ enum {
 
 	WinEditArpRouterCheckboxIndex,
 	WinEditArpExternLearnCheckboxIndex,
+#endif
 
 	WinEditArpMaxIndex
 };
@@ -155,6 +159,7 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 		rtCfg = 0;
 		break;
 	case DN_DRAWDLGITEM:
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		if( param1 == WinEditArpProxyCheckboxIndex ) {
 			bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinEditArpProxyCheckboxStoreIndex, 0));
 			bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinEditArpProxyCheckboxIndex, 0));
@@ -164,6 +169,7 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 				ChangeDialogItemsView(hDlg, WinEditArpStateTextIndex, WinEditArpStateButtonIndex, false, enabled);
 			}
 		}
+#endif
 		break;
 	case DN_BTNCLICK:
 		assert( rtCfg != 0 );
@@ -173,8 +179,9 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 			return true;
 		case WinEditArpIfaceButtonIndex:
 			rtCfg->new_a.valid.iface = rtCfg->SelectInterface(hDlg, param1, nullptr);
-			rtCfg->new_a.iface = std::move(GetText(hDlg, param1));
+			rtCfg->new_a.iface = GetText(hDlg, param1);
 			return true;
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		case WinEditArpProtocolButtonIndex:
 			rtCfg->new_a.protocol = rtCfg->SelectProto(hDlg, param1, rtCfg->new_a.protocol);
 			rtCfg->new_a.valid.protocol = rtCfg->new_a.protocol != 0;
@@ -210,6 +217,7 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 			rtCfg->new_a.valid.state = 1;
 			return true;
 		}
+#endif
 		};
 		break;
 	};
@@ -228,9 +236,13 @@ bool NetcfgArpRoute::FillNewArp(void)
 		{DI_DOUBLEBOX, false,  DEFAUL_X_START, EDIT_ARP_DIALOG_WIDTH-4,  0,     {.ptrData = L"Edit arp record:"}},
 		{DI_BUTTON,    true,   5,              0,           0,                  {0}},
 		{DI_TEXT,      false,  15,             0,           0,                  {.ptrData = L"ip:"}},
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{DI_EDIT,      false,  19,            44,           DIF_LEFTTEXT,       {0}},
 		{DI_CHECKBOX,  false,  46,             0,           0,                  {.ptrData = L"proxy"}},
 	/*Store*/ {DI_CHECKBOX,  false,  80,            0,           DIF_HIDDEN,         {0}},
+#else
+		{DI_EDIT,      false,  19,            54,           DIF_LEFTTEXT,       {0}},
+#endif
 		{DI_TEXT,      false,  56,             0,           0,                  {.ptrData = L"mac:"}},
 		{DI_EDIT,      false,  61,            79,           DIF_LEFTTEXT,       {0}},
 
@@ -238,6 +250,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 		{DI_TEXT,      true,   5,              0,           0,                  {.ptrData = L"dev:"}},
 		{DI_BUTTON,    false,  10,             0,           0,                  {0}},
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{DI_RADIOBUTTON, false, 30,             0,           DIF_GROUP,         {.ptrData = L""}},
 		{DI_RADIOBUTTON, false, 34,             0,           0,                 {.ptrData = L"use"}},
 		{DI_RADIOBUTTON, false, 42,             0,           0,                 {.ptrData = L"managed"}},
@@ -252,6 +265,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 
 		{DI_CHECKBOX,  false,  27,             0,           0,                  {.ptrData = L"router"}},
 		{DI_CHECKBOX,  false,  38,             0,           0,                  {.ptrData = L"extern_learn"}},
+#endif
 
 		{DI_ENDDIALOG, 0}
 	};
@@ -269,6 +283,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 	if( new_a.valid.iface )
 		fdc.SetText(WinEditArpIfaceButtonIndex, new_a.iface.c_str());
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if( new_a.flags & NTF_PROXY ) {
 		fdc.SetSelected(WinEditArpProxyCheckboxIndex, true);
 		fdc.OrFlags(WinEditArpMacTextIndex, DIF_DISABLE);
@@ -295,6 +310,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 
 	if( new_a.valid.state )
 		fdc.SetText(WinEditArpStateButtonIndex, towstr(ndmsgstate(new_a.state)).c_str(), true);
+#endif
 
 	auto offSuffix = fdc.AppendOkCancel();
 
@@ -321,6 +337,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 				new_a.valid.mac = !item.empty;
 				new_a.mac = item.newVal.ptrData;
 				break;
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 			case WinEditArpProxyCheckboxIndex:
 				if( item.newVal.Selected )
 					new_a.flags |= NTF_PROXY;
@@ -366,6 +383,7 @@ bool NetcfgArpRoute::FillNewArp(void)
 					new_a.flags &= ~NTF_EXT_LEARNED;
 				new_a.valid.flags = 1;
 				break;
+#endif
 			};
 		}
 	}
@@ -388,7 +406,7 @@ bool NetcfgArpRoute::EditArp(void)
 			new_a = *a;
 			if( FillNewArp() )
 				change = a->Change(new_a);
-			a == nullptr;
+			a = nullptr;
 		}
 		FreePanelItem(ppi);
 	}

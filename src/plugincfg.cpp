@@ -30,10 +30,12 @@ const char * PluginCfg::GetPanelName(PanelIndex index)
 		"inet",		// RouteInetPanelIndex
 		"inet6",	// RouteInet6PanelIndex
 		"arp",		// RouteArpPanelIndex
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		"mcinet",	// RouteMcInetPanelIndex
 		"mcinet6",	// RouteMcInet6PanelIndex
 		"rule",	    // RouteRuleInetPanelIndex
 		"routetables", // RouteIpTablesPanelIndex
+		#endif
 		"max"		// RouteMcInet6PanelIndex
 	};
 	assert( index < (ARRAYSIZE(names)-1) );
@@ -82,10 +84,11 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"18,14,7,17,0,0", L"18,14,7,17,0,0"},
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		#endif
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesTitle,
 		MFormatNetcfgPanel,
@@ -98,10 +101,11 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"29,16,7,17,0,0", L"29,16,7,17,0,0"},
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6RoutesArp,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6RoutesArp,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		#endif
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6RoutesArp,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutes6Title,
 		MFormatNetcfgPanel,
@@ -113,22 +117,23 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"N,C0,C1,C2,C3", L"N,C0,C1,C2,C3"},
 		{L"0,18,7,10,9", L"0,18,7,10,9"},
 		{{L"to ip", L"mac", L"dev", L"type", L"state", 0}, {L"to ip", L"mac", L"dev", L"type", L"state", 0}},
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{0,MF2,MEmptyString,MF4,MEmptyString,MF6McRoutes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		#else
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
+		#endif
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesArpTitle,
 		MFormatNetcfgPanel,
 		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
 		}},
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{RouteMcInetPanelIndex, {
 		L"N,C0,C1,C2,C3,C4",
 		L"18,16,7,17,0,0",
 		{L"N,C0,C1,C2,C3,C4", L"N,C0,C1,C2,C3,C4"},
 		{L"18,16,7,17,0,0", L"18,16,7,17,0,0"},
-		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		#else
-		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
-		#endif
 		{0,MF2,MF3Rules,MF4,MEmptyString,MF6McRoutes6,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutesTitle,
@@ -140,11 +145,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		L"29,16,7,17,0",
 		{L"N,C0,C1,C2,C3,C4", L"N,C0,C1,C2,C3,C4"},
 		{L"29,16,7,17,0,0", L"29,16,7,17,0,0"},
-		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		#else
-		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"expire", 0}},
-		#endif
 		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes,MEmptyString,MF8Routes,MEmptyString,0,MEmptyString,MEmptyString},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutes6Title,
@@ -179,6 +180,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		MFormatNetcfgPanel,
 		OPIF_USEFILTER|OPIF_USEHIGHLIGHTING|OPIF_SHOWPRESERVECASE
 		}}
+		#endif
 		};
 
 void PluginCfg::ReloadPanelString(struct PanelData * data, PanelIndex index)

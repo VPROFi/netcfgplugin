@@ -46,6 +46,7 @@ IpRouteInfo::IpRouteInfo()
 	memset(&osdep.rtmetrics, 0, sizeof(osdep.rtmetrics));
 #else
 	osdep.expire = 0;
+	osdep.gateway_type = IpRouteInfo::IpGatewayType;
 #endif
 }
 IpRouteInfo::~IpRouteInfo()
@@ -284,15 +285,15 @@ void IpRouteInfo::Log(void) const
 	//LogRtCache();
 #else
 	const char * fmt = sa_family == AF_INET ? \
-		"to: %18S via: %15S dev: %17S prefsrc: %15S expire: %4d flags: 0x%08X(%s)\n":
-		"to: %29S via: %15S dev: %17S prefsrc: %29S expire: %4d flags: 0x%08X(%s)\n";
+		"to: %18S via: %15S dev: %17S prefsrc: %15S expire: %4d flags: 0x%08X(%s) family %d(%s)\n":
+		"to: %29S via: %15S dev: %17S prefsrc: %29S expire: %4d flags: 0x%08X(%s) family %d(%s)\n";
 	LOG_INFO(fmt,
 		!destIpandMask.empty() ? destIpandMask.c_str():L"default",
 		gateway.empty() ? L"default":gateway.c_str(),
 		iface.c_str(),
 		prefsrc.empty() ?	L"any":prefsrc.c_str(),
 		osdep.expire,
-		flags, RouteFlagsToString(flags, sa_family == AF_INET6));
+		flags, RouteFlagsToString(flags, sa_family == AF_INET6), sa_family, familyname(sa_family));
 
 #endif
 }
@@ -853,14 +854,108 @@ bool ArpRouteInfo::Delete(void)
 #else
 bool IpRouteInfo::CreateIpRoute(void)
 {
-	LOG_ERROR("unsuported create yet\n");
-	return false;
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	switch(sa_family) {
+	case AF_INET:
+		if( (res = snprintf(ptr, size, "route -n add -inet %S", destIpandMask.c_str())) < 0 || size < res )
+			return false;
+		break;
+	case AF_INET6:
+		if( (res = snprintf(ptr, size, "route -n add -inet6 %S", destIpandMask.c_str())) < 0 || size < res )
+			return false;
+		break;
+	default:
+		LOG_ERROR("unsupported family %u(%s)", sa_family, familyname(sa_family));
+		return false;
+	};
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.gateway ) {
+		switch( osdep.gateway_type ) {
+		case IpGatewayType:
+			if( (res = snprintf(ptr, size, " %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		case InterfaceGatewayType:
+			if( (res = snprintf(ptr, size, " -interface %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		case MacGatewayType:
+			if( (res = snprintf(ptr, size, " -link %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		default:
+			break;
+		}
+	}
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s", \
+		flags & RTF_BLACKHOLE ? " -blackhole":"", \
+		flags & RTF_REJECT ? " -reject":"", \
+		flags & RTF_STATIC ? " -static":" -nostatic")) < 0) || size < res )
+		return false;
+
+	return RootExec(buf.get()) == 0;
 }
 
 bool IpRouteInfo::DeleteIpRoute(void)
 {
-	LOG_ERROR("unsuported delete yet\n");
-	return false;
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	switch(sa_family) {
+	case AF_INET:
+		if( (res = snprintf(ptr, size, "route -n delete -inet %S", destIpandMask.c_str() )) < 0 || size < res )
+			return false;
+		break;
+	case AF_INET6:
+		if( (res = snprintf(ptr, size, "route -n delete -inet6 %S", destIpandMask.c_str() )) < 0 || size < res )
+			return false;
+		break;
+	default:
+		LOG_ERROR("unsupported family %u(%s)", sa_family, familyname(sa_family));
+		return false;
+	};
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.gateway ) {
+		switch( osdep.gateway_type ) {
+		case IpGatewayType:
+			if( (res = snprintf(ptr, size, " %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		case InterfaceGatewayType:
+			if( (res = snprintf(ptr, size, " -interface %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		case MacGatewayType:
+			if( (res = snprintf(ptr, size, " -link %S", gateway.c_str())) < 0 || size < res )
+				return false;
+			break;
+		default:
+			break;
+		}
+	}
+
+	return RootExec(buf.get()) == 0;
 }
 
 bool ArpRouteInfo::Create(void)

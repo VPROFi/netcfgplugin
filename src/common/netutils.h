@@ -300,6 +300,13 @@ const char * iflinkmode(uint8_t link_mode);
 
 #endif
 
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#include <net/if_types.h>
+#include <net/route.h>
+const char * ifttoname(uint8_t ift); // IFT_
+const char * rtmtoname(uint8_t rtm); // RTM_
+#endif
+
 #ifdef __cplusplus
 }
 #endif

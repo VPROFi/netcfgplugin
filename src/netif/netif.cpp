@@ -34,43 +34,7 @@ extern "C" {
 #include <linux/ip.h>
 #include <linux/ipv6.h>
 
-/*#ifndef IPV4_DEVCONF_BC_FORWARDING
-#define IPV4_DEVCONF_BC_FORWARDING 33
-#endif
-
-#ifndef IPV4_DEVCONF_ARP_EVICT_NOCARRIER
-#define IPV4_DEVCONF_ARP_EVICT_NOCARRIER 34
-#undef IPV4_DEVCONF_MAX
-#define IPV4_DEVCONF_MAX IPV4_DEVCONF_ARP_EVICT_NOCARRIER
-#endif
-
-
-#ifndef DEVCONF_RPL_SEG_ENABLED
-#define DEVCONF_RPL_SEG_ENABLED 51
-#ifndef DEVCONF_RA_DEFRTR_METRIC
-#define DEVCONF_RA_DEFRTR_METRIC 52
-#ifndef DEVCONF_IOAM6_ENABLED
-#define DEVCONF_IOAM6_ENABLED 53
-#ifndef DEVCONF_IOAM6_ID
-#define DEVCONF_IOAM6_ID 54
-#ifndef DEVCONF_IOAM6_ID_WIDE
-#define DEVCONF_IOAM6_ID_WIDE 55
-#ifndef DEVCONF_NDISC_EVICT_NOCARRIER
-#define DEVCONF_NDISC_EVICT_NOCARRIER 56
-#ifndef DEVCONF_ACCEPT_UNTRACKED_NA
-#define DEVCONF_ACCEPT_UNTRACKED_NA 57
-#undef DEVCONF_MAX
-#define DEVCONF_MAX 58
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-*/
-
-#else
+#else // __APPLE__
 
 #include <sys/sysctl.h>
 #include <net/if_var.h>

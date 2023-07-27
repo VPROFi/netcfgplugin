@@ -138,6 +138,26 @@ extern int RootExec(const char * cmd);
 
 #else
 
+// Добавить/удалить маршрут временный
+// sudo route -n add -net 192.168.2.0/24 192.168.1.1
+// sudo route add -host 54.81.143.201 -interface en0
+// sudo route add -host 54.81.143.201 -link 14:10:9f:e7:fd:0a -static
+// sudo route add -net 10.13.0.0 netmask 255.255.0.0 
+// sudo route -n delete 192.168.2.0/24
+// Добавить маршрут постоянный:
+// 1) шаг вывести список networksetup -listnetworkserviceorder или networksetup -listallnetworkservices
+// (1) USB 10/100/1000 LAN
+// (Hardware Port: USB 10/100/1000 LAN, Device: en7)
+// (2) Wi-Fi
+// (Hardware Port: Wi-Fi, Device: en0)
+// (3) Bluetooth PAN
+// (Hardware Port: Bluetooth PAN, Device: en6)
+// (4) Thunderbolt Bridge
+// (Hardware Port: Thunderbolt Bridge, Device: bridge0)
+// список маршрутов networksetup -getadditionalroutes "USB 10/100/1000 LAN"
+// 2) шаг sudo networksetup -setadditionalroutes "USB 10/100/1000 LAN" 192.168.2.0 255.255.255.0 192.168.1.30
+// 3) шаг удалить sudo networksetup -setadditionalroutes "USB 10/100/1000 LAN"
+
 #define SET_IP_FORWARDING "sysctl -w net.inet.ip.forwarding=%d"
 #define SET_IP6_FORWARDING "sysctl -w net.inet6.ip6.forwarding=%d"
 

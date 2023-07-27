@@ -11,9 +11,9 @@ struct NetRoutes {
 	std::deque<ArpRouteInfo> arp;
 	std::deque<IpRouteInfo> inet;
 	std::deque<IpRouteInfo> inet6;
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	std::deque<IpRouteInfo> mcinet;
 	std::deque<IpRouteInfo> mcinet6;
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	std::deque<RuleRouteInfo> rule;
 	std::deque<RuleRouteInfo> rule6;
 	std::deque<RuleRouteInfo> mcrule;
@@ -41,6 +41,9 @@ protected:
 private:
 	void SetNameByIndex(const char *ifname, uint32_t index);
 	bool UpdateByNetlink(void * netlink, unsigned char af_family);
+#else
+protected:
+	bool UpdateInterfaces(void);
 #endif
 };
 

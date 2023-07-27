@@ -1,3 +1,6 @@
+#define PRIVATE
+#define KERNEL_PRIVATE
+
 #include "netifs.h"
 #include "netifset.h"
 
@@ -29,43 +32,7 @@ const char * LOG_FILE = "";
 #include <linux/ipv6.h>
 #include <linux/snmp.h>
 
-/*#ifndef DEVCONF_ACCEPT_UNTRACKED_NA
-#define DEVCONF_ACCEPT_UNTRACKED_NA 57
-#ifndef DEVCONF_NDISC_EVICT_NOCARRIER
-#define DEVCONF_NDISC_EVICT_NOCARRIER 56
-#ifndef DEVCONF_IOAM6_ID_WIDE
-#define DEVCONF_IOAM6_ID_WIDE 55
-#ifndef DEVCONF_IOAM6_ID
-#define DEVCONF_IOAM6_ID 54
-#ifndef DEVCONF_IOAM6_ENABLED
-#define DEVCONF_IOAM6_ENABLED 53
-#ifndef DEVCONF_RA_DEFRTR_METRIC
-#define DEVCONF_RA_DEFRTR_METRIC 52
-#ifndef DEVCONF_RPL_SEG_ENABLED
-#define DEVCONF_RPL_SEG_ENABLED 51
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-
-#undef DEVCONF_MAX
-#define DEVCONF_MAX 58
-
-#ifndef IPV4_DEVCONF_ARP_EVICT_NOCARRIER
-#define IPV4_DEVCONF_ARP_EVICT_NOCARRIER 34
-#undef IPV4_DEVCONF_MAX
-#define IPV4_DEVCONF_MAX 34
-#ifndef IPV4_DEVCONF_BC_FORWARDING
-#define IPV4_DEVCONF_BC_FORWARDING 33
-#endif
-#endif
-
-*/
-
-#else
+#else // __APPLE__
 #include <net/if_dl.h>
 #endif
 
@@ -255,7 +222,6 @@ bool NetInterfaces::UpdateByProcNet(void)
 			LOG_ERROR("unsupported sa_family %u\n", ifa->ifa_addr->sa_family);
 			break;
 		}
-
 	}
 
 	freeifaddrs(ifa_base);

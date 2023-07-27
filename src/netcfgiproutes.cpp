@@ -81,7 +81,7 @@ bool NetcfgIpRoute::DeleteIpRoute(void)
 
 		for( size_t i = 0; i < pi.SelectedItemsNumber; i++ ) {
 			auto ppi = GetSelectedPanelItem(i);
-			if( ppi && ppi->Flags & PPIF_USERDATA ) {
+			if( ppi && !(ppi->FindData.dwFileAttributes & FILE_ATTRIBUTE_OFFLINE) && ppi->Flags & PPIF_USERDATA ) {
 
         			assert(ppi->UserData && ((PluginUserData *)ppi->UserData)->size == sizeof(PluginUserData));
 
@@ -529,6 +529,21 @@ bool NetcfgIpRoute::SelectEncap(HANDLE hDlg, Encap & enc)
 #endif
 
 const int EDIT_IP_DIALOG_WIDTH = 84;
+
+static bool ShowHideElements(HANDLE hDlg, uint32_t chk, uint32_t chkStore, uint32_t begin, uint32_t end)
+{
+	bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chkStore, 0));
+	bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chk, 0));
+	if( prev != enabled ) {
+		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, chkStore, enabled);
+		ChangeDialogItemsView(hDlg, begin, end, false, !enabled);
+	}
+	return enabled;
+}
+
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+
 enum {
 	WinEditIpCaptionIndex,
 	WinEditIpFirstHeaderTextIndex,
@@ -549,16 +564,13 @@ enum {
 	WinEditIpPrefsrcEditIndex,
 	WinEditIpSrcMaskEditIndex,
 	WinEditIpTOSEditIndex,
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	WinEditIpOnlinkCheckBoxIndex,
 	WinEditIpEncapCheckBoxIndex,
 	WinEditIpEncapCheckBoxStoreIndex,
 	WinEditIpEncapButtonIndex,
-#endif
 	WinEditIpPrefixMaxIndex
 };
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 enum {
 	WinEditIpNextHopeSeparatorIndex,
 	WinEditIpNextHopeNextHopeCheckBoxIndex,
@@ -575,19 +587,6 @@ enum {
 	WinEditIpNextHopeEncapCheckBoxStoreIndex, // Must be more then WinEditIpNextHopeWeightEditIndex
 	WinEditIpNextHopeMaxIndex
 };
-#endif
-
-
-static bool ShowHideElements(HANDLE hDlg, uint32_t chk, uint32_t chkStore, uint32_t begin, uint32_t end)
-{
-	bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chkStore, 0));
-	bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chk, 0));
-	if( prev != enabled ) {
-		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, chkStore, enabled);
-		ChangeDialogItemsView(hDlg, begin, end, false, !enabled);
-	}
-	return enabled;
-}
 
 LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2)
 {
@@ -605,9 +604,7 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		break;
 	case DN_DRAWDLGITEM:
 	{
-
 		LOG_INFO("MSG: DN_DRAWDLGITEM 0x%08X, param1 %u WinEditIpPrefixMaxIndex %u\n", msg, param1, WinEditIpPrefixMaxIndex);
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		if( param1 > WinEditIpPrefixMaxIndex ) {
 			uint32_t rindex = (param1 - WinEditIpPrefixMaxIndex)/WinEditIpNextHopeMaxIndex;
 			uint32_t base = rindex*WinEditIpNextHopeMaxIndex+WinEditIpPrefixMaxIndex;
@@ -637,8 +634,6 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 				WinEditIpEncapButtonIndex,
 				WinEditIpEncapButtonIndex);
 		}
-#endif
-
 		break;
 	}
 	case DN_BTNCLICK:
@@ -649,7 +644,6 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		case WinEditIpDeviceButtonIndex:
 			rtCfg->new_rt.valid.ifnameIndex = rtCfg->SelectInterface(hDlg, param1, &rtCfg->new_rt.ifnameIndex);
 			return true;
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		case WinEditIpTypeButtonIndex:
 		{
 		static const wchar_t * menuElements[] = {
@@ -672,11 +666,9 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 			}
 			return true;
 		}
-#endif
 		case WinEditIpFamilyButtonIndex:
 			rtCfg->new_rt.sa_family = rtCfg->SelectFamily(hDlg, WinEditIpFamilyButtonIndex);
 			return true;
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		case WinEditIpTableButtonIndex:
 			rtCfg->new_rt.osdep.table = rtCfg->SelectTable(hDlg, param1, rtCfg->new_rt.osdep.table);
 			rtCfg->new_rt.valid.table = rtCfg->new_rt.osdep.table != 0;
@@ -735,9 +727,7 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		case WinEditIpEncapButtonIndex:
 			rtCfg->SelectEncap(hDlg, rtCfg->new_rt.osdep.enc);
 			return true;
-#endif
 		};
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		} else {
 			uint32_t rindex = (param1 - WinEditIpPrefixMaxIndex)/WinEditIpNextHopeMaxIndex;
 			uint32_t base = rindex*WinEditIpNextHopeMaxIndex+WinEditIpPrefixMaxIndex;
@@ -762,7 +752,6 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 			};
 			return true;
 			}
-#endif
 		}
 		break;
 	};
@@ -770,7 +759,6 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 	return NetCfgPlugin::psi.DefDlgProc(hDlg, msg, param1, param2);
 }
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 void NetcfgIpRoute::FillNextHope(uint32_t iindex, ItemChange & item, NextHope & nh)
 {
 	switch(iindex) {
@@ -795,7 +783,6 @@ void NetcfgIpRoute::FillNextHope(uint32_t iindex, ItemChange & item, NextHope & 
 		break;
 	};
 }
-#endif
 
 bool NetcfgIpRoute::FillNewIpRoute(void)
 {
@@ -821,16 +808,14 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 		{DI_EDIT,      true,   5,             23,           DIF_LEFTTEXT,      {.ptrData = 0}},
 		{DI_EDIT,      false,  25,            48,           DIF_LEFTTEXT,      {.ptrData = 0}},
 		{DI_EDIT,      false,  50,            53,           DIF_LEFTTEXT,      {.ptrData = 0}},
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
+
 		{DI_CHECKBOX,  false,  55,            0,            0,                 {.ptrData = L"onlink"}},
 		{DI_CHECKBOX,  false,  66,            0,            0,                 {0}},
 	/*Store*/ {DI_CHECKBOX,  false,  80,            0,            DIF_HIDDEN,        {0}},
 		{DI_BUTTON,    false,  69,            0,            0,                 {.ptrData = L"encap"}},
-#endif
 		{DI_ENDDIALOG, 0}
 	};
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	static const DlgConstructorItem nexthop[] = {
 		//  Type       NewLine X1              X2         Flags                PtrData
 		{DI_TEXT,      true,   5,             0,            DIF_BOXCOLOR|DIF_SEPARATOR, {0}},
@@ -848,7 +833,6 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	/*Store*/ {DI_CHECKBOX,  false,  80,            0,            DIF_HIDDEN,        {0}},
 		{DI_ENDDIALOG, 0}
 	};
-#endif
 
 	FarDlgConstructor fdc(&dialog[0]);
 
@@ -860,21 +844,15 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	if( new_rt.valid.prefsrc )
 		fdc.SetText(WinEditIpPrefsrcEditIndex, new_rt.prefsrc.c_str());
 
-	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if( new_rt.valid.fromsrcIpandMask )
 		fdc.SetText(WinEditIpSrcMaskEditIndex, new_rt.osdep.fromsrcIpandMask.c_str());
 	if( new_rt.valid.rtvia )
 		fdc.SetText(WinEditIpGatewayEditIndex, new_rt.osdep.rtvia_addr.c_str());
 	else if( new_rt.valid.gateway )
 		fdc.SetText(WinEditIpGatewayEditIndex, new_rt.gateway.c_str());
-	#else
-	if( new_rt.valid.gateway )
-		fdc.SetText(WinEditIpGatewayEditIndex, new_rt.gateway.c_str());
-	#endif
 
 	fdc.SetText(WinEditIpFamilyButtonIndex, towstr(ipfamilyname(new_rt.sa_family)).c_str(), true);
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	fdc.SetText(WinEditIpTypeButtonIndex, new_rt.valid.type ? towstr(rttype(new_rt.osdep.type)).c_str():0, true);
 	fdc.SetText(WinEditIpTableButtonIndex, new_rt.valid.table ? towstr(rtruletable(new_rt.osdep.table)).c_str():0, true);
 	fdc.SetText(WinEditIpScopeButtonIndex, new_rt.valid.scope ? towstr(rtscopetype(new_rt.osdep.scope)).c_str():0, true);
@@ -883,20 +861,13 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	if( new_rt.sa_family == AF_INET )
 		fdc.OrFlags(WinEditIpPrefButtonIndex, DIF_DISABLE);
 	fdc.SetText(WinEditIpPrefButtonIndex, new_rt.valid.icmp6pref ? towstr(rticmp6pref(new_rt.osdep.icmp6pref)).c_str():0, true);
-#endif
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if( new_rt.valid.metric )
 		fdc.SetCountText(WinEditIpMetricEditIndex, new_rt.osdep.metric);
 
 	if( new_rt.valid.tos && new_rt.osdep.tos )
 		fdc.SetCountText(WinEditIpTOSEditIndex, new_rt.osdep.tos);
-#else
-	if( new_rt.osdep.expire )
-		fdc.SetCountText(WinEditIpMetricEditIndex, new_rt.osdep.expire);
-#endif
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if( !new_rt.valid.encap )
 		fdc.OrFlags(WinEditIpEncapButtonIndex, DIF_DISABLE);
 	else
@@ -930,7 +901,6 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 
 	for(int i = WinEditIpNextHopeHeaderTextIndex; i < WinEditIpNextHopeMaxIndex; i++ )
 		fdc.OrFlags(offNewNextHope+i, DIF_DISABLE);
-#endif
 
 	auto offSuffix = fdc.AppendOkCancel();
 
@@ -949,7 +919,6 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 
 		for( auto & item : chlst ) {
 			if( item.itemNum >= WinEditIpPrefixMaxIndex ) {
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 				uint32_t rindex = (item.itemNum - WinEditIpPrefixMaxIndex)/WinEditIpNextHopeMaxIndex;
 				uint32_t base = rindex*WinEditIpNextHopeMaxIndex+WinEditIpPrefixMaxIndex;
 				uint32_t iindex = (item.itemNum - WinEditIpPrefixMaxIndex)%WinEditIpNextHopeMaxIndex;
@@ -958,7 +927,6 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 					FillNextHope(iindex, item, new_nh);
 				else
 					FillNextHope(iindex, item, new_rt.osdep.nhs[rindex]);
-#endif
 			} else {
 				switch( item.itemNum ) {
 				case WinEditIpDestMaskEditIndex:
@@ -974,19 +942,13 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 					new_rt.valid.iface = !item.empty;
 					break;
 				case WinEditIpMetricEditIndex:
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 					new_rt.osdep.metric = NetCfgPlugin::FSF.atoi(item.newVal.ptrData);
 					new_rt.valid.metric = !item.empty;
-#else
-					if( !item.empty )
-						new_rt.osdep.expire = NetCfgPlugin::FSF.atoi(item.newVal.ptrData);
-#endif
 					break;
 				case WinEditIpPrefsrcEditIndex:
 					new_rt.prefsrc = item.newVal.ptrData;
 					new_rt.valid.prefsrc = !item.empty;
 					break;
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 				case WinEditIpSrcMaskEditIndex:
 					new_rt.osdep.fromsrcIpandMask = item.newVal.ptrData;
 					new_rt.valid.fromsrcIpandMask = !item.empty;
@@ -1005,21 +967,247 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 				case WinEditIpEncapCheckBoxIndex:
 					new_rt.valid.encap = (bool)item.newVal.Selected;
 					break;
-#endif
 				default:
 					break;
 				};
 			}
 		}
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		if( new_nh.valid.nexthope ) {
 			new_rt.osdep.nhs.push_back(new_nh);
 			new_rt.valid.rtnexthop = 1;
 		}
-#endif
 	}
 	return change;
 }
+
+#else
+
+enum {
+	WinEditIpCaptionIndex,
+	WinEditIpDestinationMaskTextIndex,
+	WinEditIpDestMaskEditIndex,
+
+	WinEditIpSeparator1TextIndex,
+
+	WinEditIpGatewayIpRadiobuttonIndex,
+	WinEditIpGatewayMacRadiobuttonIndex,
+	WinEditIpGatewayInterfaceRadiobuttonIndex,
+
+	WinEditIpGatewayIpEditIndex,
+	WinEditIpGatewayMacEditIndex,
+	WinEditIpGatewayInterfaceButtonIndex,
+
+	WinEditIpSeparator2TextIndex,
+	WinEditIpPrefsrcTextIndex,
+	WinEditIpPrefsrcEditIndex,
+	WinEditIpExpireTextIndex,
+	WinEditIpExpireEditIndex,
+
+	WinEditIpSeparator3TextIndex,
+	WinEditIpNormalRadiobuttonIndex,
+	WinEditIpRejectRadiobuttonIndex,
+	WinEditIpBlackholeRadiobuttonIndex,
+	WinEditIpStaticCheckboxIndex,
+
+	WinEditIpPrefixMaxIndex
+};
+
+LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2)
+{
+	static NetcfgIpRoute * rtCfg = 0;
+
+	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
+
+	switch( msg ) {
+
+	case DN_INITDIALOG:
+		rtCfg = (NetcfgIpRoute *)param2;
+		break;
+	case DM_CLOSE:
+		rtCfg = 0;
+		break;
+	case DN_DRAWDLGITEM:
+	{
+		LOG_INFO("MSG: DN_DRAWDLGITEM 0x%08X, param1 %u WinEditIpPrefixMaxIndex %u\n", msg, param1, WinEditIpPrefixMaxIndex);
+		break;
+	}
+	case DN_BTNCLICK:
+		assert( rtCfg != 0 );
+		if( param1 == WinEditIpGatewayInterfaceButtonIndex ) {
+			rtCfg->new_rt.valid.ifnameIndex = rtCfg->SelectInterface(hDlg, param1, &rtCfg->new_rt.ifnameIndex);
+			return true;
+		}
+		break;
+	};
+	return NetCfgPlugin::psi.DefDlgProc(hDlg, msg, param1, param2);
+}
+
+bool NetcfgIpRoute::FillNewIpRoute(void)
+{
+	static const DlgConstructorItem dialog[] = {
+		//  Type       NewLine X1              X2         Flags                PtrData
+		{DI_DOUBLEBOX, false,  DEFAUL_X_START, EDIT_IP_DIALOG_WIDTH-4,  0,     {.ptrData = L"Edit route:"}},
+		{DI_TEXT,      true,   5,              0,           0,                 {.ptrData = L"destination/mask:"}},
+		{DI_EDIT,      false,  23,            78,           DIF_LEFTTEXT,      {.ptrData = 0}},
+
+		{DI_TEXT,      true,   5,              0,           0,                 {0}},
+
+		{DI_RADIOBUTTON, true,   5,             0,           DIF_GROUP,         {.ptrData = L"gateway"}},
+		{DI_RADIOBUTTON, false, 46,             0,           0,                 {.ptrData = L"mac"}},
+		{DI_RADIOBUTTON, false, 66,             0,           0,                 {.ptrData = L"interface"}},
+		{DI_EDIT,      true,     5,            44,           0,                 {0}},
+		{DI_EDIT,      false,   46,            64,           0,                 {0}},
+		{DI_BUTTON,    false,   66,             0,           0,                 {0}},
+
+		{DI_TEXT,      true,    5,              0,           0,                 {0}},
+		{DI_TEXT,      true,    5,              0,           0,                 {.ptrData = L"prefsrc:"}},
+		{DI_EDIT,      false,  14,             60,           0,                 {.ptrData = 0}},
+		{DI_TEXT,      false,  62,              0,           0,                 {.ptrData = L"expire:"}},
+		{DI_EDIT,      false,  70,             78,           0,                 {.ptrData = 0}},
+
+		{DI_TEXT,      true,    5,              0,           0,                 {0}},
+		{DI_RADIOBUTTON, true,   5,             0,           DIF_GROUP,         {.ptrData = L"normal"}},
+		{DI_RADIOBUTTON, false, 16,             0,           0,                 {.ptrData = L"reject"}},
+		{DI_RADIOBUTTON, false, 27,             0,           0,                 {.ptrData = L"blackhole"}},
+		{DI_CHECKBOX,  false,  41,              0,           0,                 {.ptrData = L"static"}},
+
+		{DI_ENDDIALOG, 0}
+	};
+
+	FarDlgConstructor fdc(&dialog[0]);
+
+	fdc.SetText(WinEditIpDestMaskEditIndex, new_rt.valid.destIpandMask ? new_rt.destIpandMask.c_str():L"default");
+
+	if( new_rt.valid.prefsrc )
+		fdc.SetText(WinEditIpPrefsrcEditIndex, new_rt.prefsrc.c_str());
+
+	if( new_rt.valid.gateway )
+		switch( new_rt.osdep.gateway_type ) {
+		case IpRouteInfo::OtherGatewayType:
+		case IpRouteInfo::IpGatewayType:
+			fdc.SetSelected(WinEditIpGatewayIpRadiobuttonIndex, true);
+			fdc.SetText(WinEditIpGatewayIpEditIndex, new_rt.gateway.c_str());
+			break;
+		case IpRouteInfo::MacGatewayType:
+			fdc.SetSelected(WinEditIpGatewayMacRadiobuttonIndex, true);
+			fdc.SetText(WinEditIpGatewayMacEditIndex, new_rt.gateway.c_str());
+			break;
+		case IpRouteInfo::InterfaceGatewayType:
+			fdc.SetSelected(WinEditIpGatewayInterfaceRadiobuttonIndex, true);
+			fdc.SetText(WinEditIpGatewayInterfaceButtonIndex, new_rt.gateway.c_str());
+			break;
+		};
+
+	if( new_rt.osdep.expire )
+		fdc.SetCountText(WinEditIpExpireEditIndex, new_rt.osdep.expire);
+
+	if( (new_rt.flags & RTF_WASCLONED) && (new_rt.osdep.parentflags & RTF_PRCLONING) )
+		for(int i = WinEditIpCaptionIndex+1; i < WinEditIpPrefixMaxIndex; i++ )
+			fdc.OrFlags(i, DIF_DISABLE);
+
+	if( new_rt.flags & RTF_BLACKHOLE )
+		fdc.SetSelected(WinEditIpBlackholeRadiobuttonIndex, true);
+	else if( new_rt.flags & RTF_REJECT )
+		fdc.SetSelected(WinEditIpRejectRadiobuttonIndex, true);
+	else
+		fdc.SetSelected(WinEditIpNormalRadiobuttonIndex, true);
+	if( new_rt.flags & RTF_STATIC )
+		fdc.SetSelected(WinEditIpStaticCheckboxIndex, true);
+
+
+	auto offSuffix = fdc.AppendOkCancel();
+
+	fdc.SetDefaultButton(offSuffix + WinSuffixOkIndex);
+	fdc.SetFocus(offSuffix + WinSuffixOkIndex);
+
+	FarDialog dlg(&fdc, EditIpRouteDialogProc, (LONG_PTR)this);
+	if( (dlg.Run() - offSuffix) == WinSuffixOkIndex ) {
+
+		std::vector<ItemChange> chlst;
+		change |= dlg.CreateChangeList(chlst);
+
+		if( !change )
+			return false;
+
+		for( auto & item : chlst ) {
+			switch( item.itemNum ) {
+			case WinEditIpDestMaskEditIndex:
+				new_rt.destIpandMask = item.newVal.ptrData;
+				new_rt.valid.destIpandMask = !item.empty;
+				break;
+			case WinEditIpGatewayIpRadiobuttonIndex:
+				if( item.newVal.Selected )
+	                                new_rt.osdep.gateway_type = IpRouteInfo::IpGatewayType;
+				break;
+			case WinEditIpGatewayMacRadiobuttonIndex:
+				if( item.newVal.Selected )
+	                                new_rt.osdep.gateway_type = IpRouteInfo::MacGatewayType;
+				break;
+			case WinEditIpGatewayInterfaceRadiobuttonIndex:
+				if( item.newVal.Selected )
+	                                new_rt.osdep.gateway_type = IpRouteInfo::InterfaceGatewayType;
+				break;
+			case WinEditIpGatewayIpEditIndex:
+				if( new_rt.osdep.gateway_type == IpRouteInfo::IpGatewayType || new_rt.osdep.gateway_type == IpRouteInfo::OtherGatewayType ) {
+					new_rt.gateway = item.newVal.ptrData;
+					new_rt.valid.gateway = !item.empty;
+				}
+				break;
+			case WinEditIpGatewayMacEditIndex:
+				if( new_rt.osdep.gateway_type == IpRouteInfo::MacGatewayType ) {
+					new_rt.gateway = item.newVal.ptrData;
+					new_rt.valid.gateway = !item.empty;
+				}
+				break;
+			case WinEditIpGatewayInterfaceButtonIndex:
+				if( new_rt.osdep.gateway_type == IpRouteInfo::InterfaceGatewayType ) {
+					new_rt.gateway = item.newVal.ptrData;
+					new_rt.valid.gateway = !item.empty;
+				}
+				break;
+			case WinEditIpExpireEditIndex:
+				new_rt.osdep.expire = NetCfgPlugin::FSF.atoi(item.newVal.ptrData);
+				new_rt.valid.expire = !item.empty;
+				break;
+			case WinEditIpPrefsrcEditIndex:
+				new_rt.prefsrc = item.newVal.ptrData;
+				new_rt.valid.prefsrc = !item.empty;
+				break;
+			case WinEditIpBlackholeRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_BLACKHOLE;
+				else
+					new_rt.flags &= ~RTF_BLACKHOLE;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpRejectRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_REJECT;
+				else
+					new_rt.flags &= ~RTF_REJECT;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpNormalRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_rt.flags &= ~(RTF_BLACKHOLE|RTF_REJECT);
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpStaticCheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_STATIC;
+				else
+					new_rt.flags &= ~RTF_STATIC;
+				new_rt.valid.flags = 1;
+				break;
+			default:
+				break;
+			};
+		}
+	}
+	return change;
+}
+#endif
+
 
 bool NetcfgIpRoute::EditIpRoute(void)
 {
@@ -1207,7 +1395,13 @@ int NetcfgIpRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsN
 		#endif
 
 		pi->FindData.lpwszFileName = item.destIpandMask.empty() ? default_route:item.destIpandMask.c_str();
+
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)				
 		pi->FindData.dwFileAttributes = 0;
+		#else
+		pi->FindData.dwFileAttributes = (item.flags & RTF_WASCLONED) && (item.osdep.parentflags & RTF_PRCLONING) ? (FILE_ATTRIBUTE_OFFLINE|FILE_ATTRIBUTE_HIDDEN):0;
+		#endif
+
 		pi->FindData.nFileSize = 0;
 
 		PluginUserData * user_data = (PluginUserData *)malloc(sizeof(PluginUserData));

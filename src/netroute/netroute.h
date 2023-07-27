@@ -51,6 +51,16 @@ struct IpRouteInfo {
 	uint8_t dstprefixlen;
 	uint32_t ifnameIndex;
 	uint32_t hoplimit;
+
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	typedef enum GatewayType {
+		IpGatewayType,
+		InterfaceGatewayType,
+		MacGatewayType,
+		OtherGatewayType
+	} GatewayType;
+#endif
+
 	struct {
 		unsigned int flags:1;
 		unsigned int iface:1;
@@ -75,6 +85,10 @@ struct IpRouteInfo {
 		unsigned int encap:1;
 		unsigned int rtvia:1;
 		unsigned int nhid:1;
+#else
+		unsigned int expire:1;
+		unsigned int mask:1;
+		unsigned int parentflags:1;
 #endif
 	} valid;
 
@@ -142,7 +156,9 @@ struct IpRouteInfo {
 
 		std::vector<NextHope> nhs;
 #else
+		uint32_t parentflags;
 		uint32_t expire;
+		GatewayType gateway_type;
 #endif
 	} osdep;
 

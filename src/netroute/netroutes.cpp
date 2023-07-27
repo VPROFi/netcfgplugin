@@ -62,7 +62,6 @@ NetRoutes::~NetRoutes()
 #define MAX_INTERFACE_NAME_LEN 16
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
-
 static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = false)
 {
 	const size_t maxlen = INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
@@ -104,17 +103,50 @@ static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = fa
 		if (sdl->sdl_nlen == 0 && sdl->sdl_alen == 0 &&
 		    sdl->sdl_slen == 0) {
 			static_assert( IFNAMSIZ < sizeof(s) );
+
+			/*LOG_INFO("1. sdl_index: %d\n", sdl->sdl_index);
+			LOG_INFO("1. sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
+			LOG_INFO("1. sdl_nlen:  %d\n", sdl->sdl_nlen);
+			LOG_INFO("1. sdl_alen   %u\n", sdl->sdl_alen);
+			LOG_INFO("1. sdl_slen   %u\n", sdl->sdl_slen);*/
+
 			addr = if_indextoname(sdl->sdl_index, s);
 		} else if( sdl->sdl_type == IFT_ETHER || sdl->sdl_alen == ETHER_ADDR_LEN ) {
+
+			/*LOG_INFO("2. sdl_index: %d\n", sdl->sdl_index);
+			LOG_INFO("2. sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
+			LOG_INFO("2. sdl_nlen:  %d\n", sdl->sdl_nlen);
+			LOG_INFO("2. sdl_alen   %u\n", sdl->sdl_alen);
+			LOG_INFO("2. sdl_slen   %u\n", sdl->sdl_slen);*/
+
 			unsigned char * mac = (unsigned char *)sdl->sdl_data + sdl->sdl_nlen;
-			//LOG_INFO("sdl->sdl_nlen %u\n", sdl->sdl_nlen);
-			//LOG_INFO("sdl->sdl_alen %u\n", sdl->sdl_alen);
-			//LOG_INFO("sdl->sdl_slen %u\n", sdl->sdl_slen);
 			static_assert( sizeof("FF:FF:FF:FF:FF:FF") < sizeof(s) );
 			if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]) > 0 )
 				addr = s;
-		} else
+		} else if( (sdl->sdl_alen + sdl->sdl_nlen/2) == ETHER_ADDR_LEN ) {
+
+			LOG_INFO("2.5 sdl_index: %d\n", sdl->sdl_index);
+			LOG_INFO("2.5 sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
+			LOG_INFO("2.5 sdl_nlen:  %d\n", sdl->sdl_nlen);
+			LOG_INFO("2.5 sdl_alen   %u\n", sdl->sdl_alen);
+			LOG_INFO("2.5 sdl_slen   %u\n", sdl->sdl_slen);
+
+			static_assert( ETHER_ADDR_LEN*3 < sizeof(s) );
+			memmove(s, sdl->sdl_data, sdl->sdl_nlen);
+			char * ptr = &s[sdl->sdl_nlen];
+			for(int i = 0; i < (ETHER_ADDR_LEN - sdl->sdl_nlen/2); i++ )
+				ptr += snprintf(ptr, maxlen-(ptr-s), ":%02x", *((unsigned char *)sdl->sdl_data + sdl->sdl_nlen + i));
+			addr = s;
+		} else {
+
+			LOG_INFO("3. sdl_index: %d\n", sdl->sdl_index);
+			LOG_INFO("3. sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
+			LOG_INFO("3. sdl_nlen:  %d\n", sdl->sdl_nlen);
+			LOG_INFO("3. sdl_alen   %u\n", sdl->sdl_alen);
+			LOG_INFO("3. sdl_slen   %u\n", sdl->sdl_slen);
+
 			addr = link_ntoa(sdl);
+		}
 		break;
 	}
 	default:
@@ -252,6 +284,12 @@ static std::wstring towstr(const char * name)
 {
 	std::string _s(name);
 	return std::wstring(_s.begin(), _s.end());
+}
+
+static std::string tostr(const wchar_t * name)
+{
+	std::wstring _s(name);
+	return std::string(_s.begin(), _s.end());
 }
 
 static std::wstring destIpandMask(uint8_t family, void * adr, uint8_t maskbits)
@@ -1267,6 +1305,10 @@ bool NetRoutes::Update(void)
 	fclose(routes);	
 
 #else
+	// clear before start
+	Clear();
+
+	UpdateInterfaces();
 
 	char ifname[MAX_INTERFACE_NAME_LEN] = {0};
 	int mib[6] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_DUMP2, 0};
@@ -1307,14 +1349,23 @@ bool NetRoutes::Update(void)
 
 			IpRouteInfo ipr;
 			ipr.ifnameIndex = rtm->rtm_index;
-			if_indextoname(rtm->rtm_index, ifname);
-			ipr.iface = towstr(ifname);
+			ipr.valid.ifnameIndex = ipr.ifnameIndex != (uint32_t)-1;
+
+			if( if_indextoname(rtm->rtm_index, ifname) )
+				ipr.iface = towstr(ifname);
+			ipr.valid.iface = !ipr.iface.empty();
 			ipr.flags = rtm->rtm_flags;
+			ipr.valid.flags = 1;
+
+			ipr.osdep.parentflags = rtm->rtm_parentflags;
+			ipr.valid.parentflags = 1;
+
 			ipr.hoplimit = rtm->rtm_rmx.rmx_hopcount;
+			ipr.valid.hoplimit = ipr.hoplimit != 0;
 
 			LOG_INFO("%s: rtm_msglen:       %d (%d)\n", ifname, rtm->rtm_msglen, sizeof(struct rt_msghdr2));
 			LOG_INFO("%s: rtm_version:      %d\n", ifname, rtm->rtm_version);
-			LOG_INFO("%s: rtm_type:         0x%02X\n", ifname, rtm->rtm_type);
+			LOG_INFO("%s: rtm_type:         0x%02X (%s)\n", ifname, rtm->rtm_type, rtmtoname(rtm->rtm_type));
 			LOG_INFO("%s: rtm_index:        %d\n", ifname, rtm->rtm_index);
 			LOG_INFO("%s: rtm_flags:       \"%s\"(0x%08X) (%s)\n", ifname, RouteFlagsToString(rtm->rtm_flags, 0), rtm->rtm_flags, GetRtmFlags(rtm->rtm_flags));
 			LOG_INFO("%s: rtm_addrs:       \"%s\"(0x%08X)\n", ifname, GetRtmAddrs(rtm->rtm_addrs), rtm->rtm_addrs);
@@ -1329,8 +1380,10 @@ bool NetRoutes::Update(void)
 			if( (expire_time = rtm->rtm_rmx.rmx_expire - time((time_t *)0)) > 0 ) {
 				LOG_INFO("%s: rmx_expire: %d (%d) (lifetime for route, e.g. redirect)\n", ifname, rtm->rtm_rmx.rmx_expire, (int)expire_time);
 				ipr.osdep.expire = (uint32_t)expire_time;
+				ipr.valid.expire = 1;
 			} else {
 				ipr.osdep.expire = 0;
+				ipr.valid.expire = 0;
 				LOG_INFO("%s: rmx_expire: %d (lifetime for route, e.g. redirect)\n", ifname, rtm->rtm_rmx.rmx_expire);
 			}
 			LOG_INFO("%s: rmx_recvpipe: %d (inbound delay-bandwidth product)\n", ifname, rtm->rtm_rmx.rmx_recvpipe);
@@ -1352,12 +1405,13 @@ bool NetRoutes::Update(void)
 					static_assert(sizeof(sa->sa_len) == sizeof(uint8_t));
 					memmove(&address, sa, sa->sa_len);
 
-					LOG_INFO("%u. %s: sa 0x%p sa->sa_family %u sa->sa_len %u\n", i, ifname, sa, sa->sa_family, sa->sa_len);
+					LOG_INFO("%u. %s: sa %p sa->sa_family %u (%s) sa->sa_len %u\n", i, ifname, sa, sa->sa_family, familyname(sa->sa_family), sa->sa_len);
 
 					sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
 
 					if( i == RTAX_DST ) {
 						ipr.destIpandMask = get_sockaddr_str((struct sockaddr *)&address, false);
+						ipr.valid.destIpandMask = !ipr.destIpandMask.empty();
 						LOG_INFO("%u. %s: destIp: %S\n", i, ifname, ipr.destIpandMask.c_str());
 						src_sa_family = ((struct sockaddr *)&address)->sa_family;
 						sa_family = src_sa_family;
@@ -1367,24 +1421,43 @@ bool NetRoutes::Update(void)
 					if( i == RTAX_GATEWAY ) {
 						ipr.gateway = get_sockaddr_str((struct sockaddr *)&address, false);
 						LOG_INFO("%u. %s: gateway: %S\n", i, ifname, ipr.gateway.c_str());
-						if( ((struct sockaddr *)&address)->sa_family == AF_LINK && !(rtm->rtm_addrs & RTA_NETMASK) ) {
+						ipr.valid.gateway = !ipr.gateway.empty();
+
+						if( ((struct sockaddr *)&address)->sa_family == AF_LINK ) {
 							struct sockaddr_dl * sdl = (struct sockaddr_dl *)&address;
-							if( sdl->sdl_type == IFT_ETHER || sdl->sdl_alen == ETHER_ADDR_LEN )
+							if( ipr.valid.gateway ) {
+								if( sdl->sdl_alen == 0 && sdl->sdl_slen == 0 )
+									ipr.osdep.gateway_type = IpRouteInfo::InterfaceGatewayType;
+								else if( sdl->sdl_type == IFT_ETHER || sdl->sdl_alen == ETHER_ADDR_LEN || (sdl->sdl_alen + sdl->sdl_nlen/2) == ETHER_ADDR_LEN )
+									ipr.osdep.gateway_type = IpRouteInfo::MacGatewayType;
+								else
+									ipr.osdep.gateway_type = IpRouteInfo::OtherGatewayType;
+							}
+							if( !(rtm->rtm_addrs & RTA_NETMASK) && (sdl->sdl_type == IFT_ETHER || sdl->sdl_alen == ETHER_ADDR_LEN) )
 								sa_family = AF_LINK;
 						}
 						continue;
 					}
 
 					if( i == RTAX_NETMASK && sa_family != AF_LINK ) {
-						((struct sockaddr *)&address)->sa_family = src_sa_family;
-						ipr.destIpandMask += L"/";
-						ipr.destIpandMask += get_sockaddr_str((struct sockaddr *)&address, true);
-						LOG_INFO("%u. %s: destIpandMask: %S\n", i, ifname, ipr.destIpandMask.c_str());
+						if( ipr.valid.destIpandMask ) {
+							((struct sockaddr *)&address)->sa_family = src_sa_family;
+							ipr.destIpandMask += L"/";
+							if( sa_family == AF_INET )
+								ipr.destIpandMask += std::to_wstring(IpMaskToBits(tostr(get_sockaddr_str((struct sockaddr *)&address, true).c_str()).c_str()));
+							else if( sa_family == AF_INET6 )
+								ipr.destIpandMask += std::to_wstring(Ip6MaskToBits(tostr(get_sockaddr_str((struct sockaddr *)&address, true).c_str()).c_str()));
+							else
+								ipr.destIpandMask += get_sockaddr_str((struct sockaddr *)&address, true);
+							ipr.valid.mask = 1;
+							LOG_INFO("%u. %s: destIpandMask: %S\n", i, ifname, ipr.destIpandMask.c_str());
+						}
 						continue;
 					}
 
 					if( i == RTAX_IFA ) {
 						ipr.prefsrc = get_sockaddr_str((struct sockaddr *)&address, false);
+						ipr.valid.prefsrc = !ipr.prefsrc.empty();
 						LOG_INFO("%u. %s: prefsrc: %S\n", i, ifname, ipr.prefsrc.c_str());
 					}
 				}
@@ -1398,11 +1471,16 @@ bool NetRoutes::Update(void)
 			else if( sa_family == AF_LINK ) {
 				ArpRouteInfo ari;
 				ari.iface = ipr.iface;
+				ari.valid.iface = ipr.valid.iface;
 				ari.ip = ipr.destIpandMask;
+				ari.valid.ip = ipr.valid.destIpandMask;
 				ari.mac = ipr.gateway;
+				ari.valid.mac = ipr.valid.gateway;
 				ari.sa_family = sa_family;
 				ari.flags = ipr.flags;
+				ari.valid.flags = ipr.valid.flags;
 				ari.ifnameIndex = ipr.ifnameIndex;
+				ari.valid.ifnameIndex = ipr.valid.ifnameIndex;
 				LOG_INFO("add arp ip %S mac %S\n", ari.ip.c_str(), ari.mac.c_str());
 				arp.push_back(ari);
 			} else {
@@ -1477,12 +1555,15 @@ void NetRoutes::Log(void)
 void NetRoutes::Clear(void)
 {
 	LOG_INFO("\n");
+
+	ifs.clear();
+
 	arp.clear();
 	inet.clear();
 	inet6.clear();
+	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	mcinet.clear();
 	mcinet6.clear();
-	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	rule.clear();
 	rule6.clear();
 	mcrule.clear();
@@ -1513,6 +1594,75 @@ bool NetRoutes::SetIp6Forwarding(bool on)
 	}
 	return false;
 }
+
+
+#if defined(__APPLE__) || defined(__FreeBSD__)
+bool NetRoutes::UpdateInterfaces(void)
+{
+	LOG_INFO("\n");
+
+	char ifname[MAX_INTERFACE_NAME_LEN] = {0};
+	int mib[6] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0};
+	char * buf = 0;
+	size_t size = 0;
+
+	if( sysctl(mib, 6, NULL, &size, NULL, 0) < 0) {
+		LOG_ERROR("sysctl(CTL_NET, PF_ROUTE, NET_RT_IFLIST2) ... error (%s)\n", errorname(errno));
+		return false;
+	}
+
+	size += size/2;
+
+	buf = (char *)malloc(size);
+	if( !buf ) {
+		LOG_ERROR("can`t allocate %u bytes\n", size);
+		return false;
+	}
+
+	do {
+		if( sysctl(mib, 6, buf, &size, NULL, 0) < 0) {
+			LOG_ERROR("sysctl(CTL_NET, PF_ROUTE, NET_RT_IFLIST2) ... error (%s)\n", errorname(errno));
+			break;
+		}
+
+		char *lim, *next;
+		lim = buf + size;
+
+		for (next = buf; next < lim; ) {
+			struct if_msghdr * ifm = (struct if_msghdr *)next;
+			next += ifm->ifm_msglen;
+
+			LOG_INFO("ifm_msglen:       %d (%d)\n", ifm->ifm_msglen, sizeof(struct rt_msghdr2));
+			LOG_INFO("ifm_version:      %d\n", ifm->ifm_version);
+			LOG_INFO("ifm_type:         0x%02X (%s)\n", ifm->ifm_type, rtmtoname(ifm->ifm_type));
+			LOG_INFO("ifm_addrs:       \"%s\"(0x%08X)\n", GetRtmAddrs(ifm->ifm_addrs), ifm->ifm_addrs);
+			LOG_INFO("ifm_flags:       \"%s\"(0x%08X) (%s)\n", RouteFlagsToString(ifm->ifm_flags, 0), ifm->ifm_flags, GetRtmFlags(ifm->ifm_flags));
+			LOG_INFO("ifm_index:        %d\n", ifm->ifm_index);
+
+			if( ifm->ifm_type != RTM_IFINFO2 || !(ifm->ifm_addrs & RTA_IFP) )
+				continue;
+
+			struct sockaddr_dl *sdl = (struct sockaddr_dl *)((struct if_msghdr2 *)ifm + 1);
+
+			/* The interface name is not a zero-ended string */
+			memcpy(ifname, sdl->sdl_data, MIN(sizeof(ifname) - 1, sdl->sdl_nlen));
+			ifname[MIN(sizeof(ifname) - 1, sdl->sdl_nlen)] = 0;
+
+			LOG_INFO("sdl_index: %d\n", sdl->sdl_index);
+			LOG_INFO("sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
+			LOG_INFO("sdl_nlen:  %d\n", sdl->sdl_nlen);
+
+			LOG_INFO("%d. ifname: %s\n", ifm->ifm_index, ifname);
+			ifs[ifm->ifm_index] = towstr(ifname);
+		}
+
+	} while(0);
+
+	free(buf);
+
+	return false;
+}
+#endif
 
 #ifdef MAIN_NETROUTES
 

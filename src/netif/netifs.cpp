@@ -1,6 +1,3 @@
-#define PRIVATE
-#define KERNEL_PRIVATE
-
 #include "netifs.h"
 #include "netifset.h"
 

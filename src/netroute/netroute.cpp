@@ -151,7 +151,7 @@ const char * IpRouteInfo::GetEncap(const Encap & enc) const
 		res = 0;
 
 		if( enc.data.ip.valid.flags ) {
-			//if( (res = snprintf(ptr, size, " flags 0x%04x (%s)", enc.data.ip.flags, tunnelflagsname(enc.data.ip.flags))) < 0 || size < res )
+			//if( (res = snprintf(ptr, size, " flags 0x%04x (%s)\n", enc.data.ip.flags, tunnelflagsname(enc.data.ip.flags))) < 0 || size < res )
 			//	break;
 
 			if( (res = snprintf(ptr, size, " %s", tunnelflagsname(enc.data.ip.flags))) < 0 || size < res )
@@ -491,7 +491,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 			//res = snprintf(ptr, size, "ip %smroute add", sa_family == RTNL_FAMILY_IP6MR ? "-6 ":"");
 			//break;
 		default:
-			LOG_ERROR("unsupported family: %u (%s)", sa_family, ipfamilyname(sa_family));
+			LOG_ERROR("unsupported family: %u (%s)\n", sa_family, ipfamilyname(sa_family));
 			return false;
 		};
        
@@ -630,7 +630,7 @@ bool IpRouteInfo::DeleteIpRoute(void)
 			//res = snprintf(ptr, size, "ip %smroute del", sa_family == RTNL_FAMILY_IP6MR ? "-6 ":"");
 			//break;
 		default:
-			LOG_ERROR("unsupported family: %u (%s)", sa_family, ipfamilyname(sa_family));
+			LOG_ERROR("unsupported family: %u (%s)\n", sa_family, ipfamilyname(sa_family));
 			return false;
 		};
        
@@ -870,7 +870,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 			return false;
 		break;
 	default:
-		LOG_ERROR("unsupported family %u(%s)", sa_family, familyname(sa_family));
+		LOG_ERROR("unsupported family %u(%s)\n", sa_family, familyname(sa_family));
 		return false;
 	};
 
@@ -928,7 +928,7 @@ bool IpRouteInfo::DeleteIpRoute(void)
 			return false;
 		break;
 	default:
-		LOG_ERROR("unsupported family %u(%s)", sa_family, familyname(sa_family));
+		LOG_ERROR("unsupported family %u(%s)\n", sa_family, familyname(sa_family));
 		return false;
 	};
 
@@ -960,13 +960,89 @@ bool IpRouteInfo::DeleteIpRoute(void)
 
 bool ArpRouteInfo::Create(void)
 {
-	LOG_ERROR("unsuported yet\n");
-	return false;
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	switch(sa_family) {
+	case AF_INET:
+		if( (res = snprintf(ptr, size, "arp -S -n %S %S", ip.c_str(), mac.c_str())) < 0 || size < res )
+			return false;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.iface && (res = snprintf(ptr, size, " ifscope %S", iface.c_str())) < 0) || size < res )
+			return false;
+		break;
+	case AF_INET6:
+		if( (res = snprintf(ptr, size, "ndp -s -n %S", ip.c_str())) < 0 || size < res )
+			return false;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.iface && (res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0) || size < res )
+			return false;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.mac && (res = snprintf(ptr, size, " %S", mac.c_str())) < 0) || size < res )
+			return false;
+
+		break;
+	default:
+		LOG_ERROR("unsupported family %u(%s)\n", sa_family, familyname(sa_family));
+		return false;
+	};
+
+	return RootExec(buf.get()) == 0;
 }
+
 bool ArpRouteInfo::Delete(void)
 {
-	LOG_ERROR("unsuported yet\n");
-	return false;
+	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
+	char * ptr = buf.get();
+	size_t size = MAX_CMD_LEN+1;
+	int res = 0;
+	*ptr = 0;
+
+	LOG_INFO("ArpRouteInfo::Delete\n");
+
+	switch(sa_family) {
+	case AF_INET:
+		if( (res = snprintf(ptr, size, "arp -n -d %S", ip.c_str())) < 0 || size < res )
+			return false;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.iface && (res = snprintf(ptr, size, " ifscope %S", iface.c_str())) < 0) || size < res )
+			return false;
+		break;
+	case AF_INET6:
+		if( (res = snprintf(ptr, size, "ndp -d -n %S", ip.c_str())) < 0 || size < res )
+			return false;
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.iface && (res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0) || size < res )
+			return false;
+
+		break;
+	default:
+		LOG_ERROR("unsupported family %u(%s)\n", sa_family, familyname(sa_family));
+		return false;
+	};
+
+	return RootExec(buf.get()) == 0;
 }
 
 #endif

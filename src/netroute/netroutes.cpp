@@ -1463,7 +1463,7 @@ bool NetRoutes::Update(void)
 				}
 			}
 
-			ipr.sa_family = sa_family;
+			ipr.sa_family = src_sa_family;
 			if( sa_family == AF_INET )
 				inet.push_back(ipr);
 			else if( sa_family == AF_INET6 )
@@ -1476,7 +1476,7 @@ bool NetRoutes::Update(void)
 				ari.valid.ip = ipr.valid.destIpandMask;
 				ari.mac = ipr.gateway;
 				ari.valid.mac = ipr.valid.gateway;
-				ari.sa_family = sa_family;
+				ari.sa_family = ipr.sa_family;
 				ari.flags = ipr.flags;
 				ari.valid.flags = ipr.valid.flags;
 				ari.ifnameIndex = ipr.ifnameIndex;

@@ -178,10 +178,7 @@ LONG_PTR WINAPI EditEncapDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR p
 {
 	static NetcfgIpRoute * rtCfg = 0;
 
-	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
-
 	switch( msg ) {
-
 	case DN_INITDIALOG:
 		rtCfg = (NetcfgIpRoute *)param2;
 		break;
@@ -367,9 +364,9 @@ bool NetcfgIpRoute::SelectEncap(HANDLE hDlg, Encap & enc)
 				flags += L")";
 			}
 			fdc.SetText(WinEditIpEncapIpFlagsTextIndex, flags.c_str(), true);
-			fdc.SetSelected(WinEditIpEncapIpCsumCheckBoxIndex, enc.data.ip.flags & TUNNEL_CSUM);
-			fdc.SetSelected(WinEditIpEncapIpKeyCheckBoxIndex, enc.data.ip.flags & TUNNEL_KEY);
-			fdc.SetSelected(WinEditIpEncapIpSeqCheckBoxIndex, enc.data.ip.flags & TUNNEL_SEQ);
+			fdc.SetSelected(WinEditIpEncapIpCsumCheckBoxIndex, enc.data.ip.flags & TUNNEL_CSUM != 0);
+			fdc.SetSelected(WinEditIpEncapIpKeyCheckBoxIndex, enc.data.ip.flags & TUNNEL_KEY != 0);
+			fdc.SetSelected(WinEditIpEncapIpSeqCheckBoxIndex, enc.data.ip.flags & TUNNEL_SEQ != 0);
 
 			if( enc.data.ip.flags & TUNNEL_GENEVE_OPT && enc.data.ip.valid.geneve ) {
 				fdc.OrFlags(WinEditIpEncapIpOptsVxlanEditIndex, DIF_HIDDEN);
@@ -592,10 +589,7 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 {
 	static NetcfgIpRoute * rtCfg = 0;
 
-	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
-
 	switch( msg ) {
-
 	case DN_INITDIALOG:
 		rtCfg = (NetcfgIpRoute *)param2;
 		break;
@@ -604,7 +598,6 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		break;
 	case DN_DRAWDLGITEM:
 	{
-		LOG_INFO("MSG: DN_DRAWDLGITEM 0x%08X, param1 %u WinEditIpPrefixMaxIndex %u\n", msg, param1, WinEditIpPrefixMaxIndex);
 		if( param1 > WinEditIpPrefixMaxIndex ) {
 			uint32_t rindex = (param1 - WinEditIpPrefixMaxIndex)/WinEditIpNextHopeMaxIndex;
 			uint32_t base = rindex*WinEditIpNextHopeMaxIndex+WinEditIpPrefixMaxIndex;
@@ -882,7 +875,7 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 		auto off = fdc.GetNumberOfItems();
 		fdc.AppendItems(&nexthop[0]);
 		fdc.SetSelected(off+WinEditIpNextHopeNextHopeCheckBoxIndex, true);
-		fdc.SetSelected(off+WinEditIpNextHopeOnlinkCheckBoxIndex, item.flags & RTNH_F_ONLINK);
+		fdc.SetSelected(off+WinEditIpNextHopeOnlinkCheckBoxIndex, item.flags & RTNH_F_ONLINK != 0);
 		fdc.SetText(off+WinEditIpNextHopeFamilyButtonIndex, item.valid.rtvia ? towstr(ipfamilyname(item.rtvia_family)).c_str():0, true);
 		fdc.SetText(off+WinEditIpNextHopeViaEditIndex, item.valid.rtvia ? item.rtvia_addr.c_str():item.gateway.c_str());
 		auto it = ifs.find(item.ifindex);
@@ -1016,10 +1009,7 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 {
 	static NetcfgIpRoute * rtCfg = 0;
 
-	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
-
 	switch( msg ) {
-
 	case DN_INITDIALOG:
 		rtCfg = (NetcfgIpRoute *)param2;
 		break;
@@ -1027,10 +1017,7 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		rtCfg = 0;
 		break;
 	case DN_DRAWDLGITEM:
-	{
-		LOG_INFO("MSG: DN_DRAWDLGITEM 0x%08X, param1 %u WinEditIpPrefixMaxIndex %u\n", msg, param1, WinEditIpPrefixMaxIndex);
 		break;
-	}
 	case DN_BTNCLICK:
 		assert( rtCfg != 0 );
 		if( param1 == WinEditIpGatewayInterfaceButtonIndex ) {
@@ -1302,13 +1289,8 @@ int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState
 		case VK_F4:
 			change |= EditIpRoute();
 			return TRUE;
-		case VK_F1:
-		case VK_F10:
-			return FALSE;
 		}
 
-		if( key >= VK_F1 && key <= VK_F12 )
-			return TRUE;
 	}
 
 	if( controlState == PKF_SHIFT && key == VK_F4 ) {
@@ -1321,21 +1303,19 @@ int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState
 	//PKF_SHIFT       = 0x00000004,
 	//PKF_PREPROCESS  = 0x00080000,
 
-	return FALSE;
+	return GetPanelTitleKey(key, controlState) != 0;
 }
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 void NetcfgIpRoute::GetOpenPluginInfo(struct OpenPluginInfo * info)
 {
-	if( panel == PanelRules ) {
-		rule->GetOpenPluginInfo(info);
+	if( panel == PanelRules || panel == PanelTables ) {
+		if( panel == PanelRules )
+			rule->GetOpenPluginInfo(info);
+		else
+			tables->GetOpenPluginInfo(info);
 		info->PanelTitle = GetPanelTitle();
-		return;
-	}
-
-	if( panel == PanelTables ) {
-		tables->GetOpenPluginInfo(info);
-		info->PanelTitle = GetPanelTitle();
+		const_cast<struct KeyBarTitles *>(info->KeyBar)->Titles[6-1] = const_cast<wchar_t *>(GetPanelTitleKey(VK_F6));
 		return;
 	}
 

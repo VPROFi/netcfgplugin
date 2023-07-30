@@ -41,6 +41,7 @@ public:
 
 	void GetPanelInfo(PanelInfo & pi);
 	const wchar_t * GetPanelTitle(void) const;
+	const wchar_t * GetPanelTitleKey(int key, unsigned int controlState = 0) const;
 
 	PluginPanelItem * GetPanelItem(intptr_t itemNum) const;
 	void FreePanelItem(PluginPanelItem * ppi) const;

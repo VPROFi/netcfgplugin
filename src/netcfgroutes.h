@@ -19,9 +19,8 @@ private:
 	uint32_t active;
 	std::vector<std::unique_ptr<FarPanel>> panels;
 
-	bool autoAppendMcRoutes;
-	bool autoAppendMc6Routes;
-	
+	bool change;
+
 	// copy and assignment not allowed
 	NetcfgRoutes(const NetcfgRoutes&) = delete;
 	void operator=(const NetcfgRoutes&) = delete;

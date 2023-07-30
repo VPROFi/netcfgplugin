@@ -194,8 +194,6 @@ LONG_PTR WINAPI EditRuleDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR pa
 {
 	static NetcfgIpRule * rtCfg = 0;
 
-	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
-
 	switch( msg ) {
 
 	case DN_INITDIALOG:
@@ -593,13 +591,7 @@ int NetcfgIpRule::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState,
 		case VK_F4:
 			change = EditRule();
 			return TRUE;
-		case VK_F1:
-		case VK_F10:
-			return FALSE;
 		}
-
-		if( key >= VK_F1 && key <= VK_F12 )
-			return TRUE;
 	}
 
 	if( controlState == PKF_SHIFT && key == VK_F4 ) {
@@ -607,7 +599,7 @@ int NetcfgIpRule::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState,
 		return TRUE;
 	}
 
-	return FALSE;
+	return GetPanelTitleKey(key, controlState) != 0;
 }
 
 int NetcfgIpRule::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber)

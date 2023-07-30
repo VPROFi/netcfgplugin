@@ -70,8 +70,13 @@ int NetCfgPlugin::Configure(int itemNumber)
 
 HANDLE NetCfgPlugin::OpenPlugin(int openFrom, INT_PTR item)
 {
-	LOG_INFO("\n");
-	if( item < PanelTypeMax )
+	LOG_INFO("openFrom %u, item %u\n", openFrom, item);
+
+	if( (openFrom == OPEN_DISKMENU && !cfg->interfacesAddToDisksMenu && cfg->routesAddToDisksMenu) ||
+	    (openFrom == OPEN_PLUGINSMENU && !cfg->interfacesAddToPluginsMenu && cfg->routesAddToPluginsMenu))
+		item = PanelNetworkRoutes;
+
+	if( item < panel.size() )
 		return static_cast<HANDLE>(panel[item].get());
 	return 0;
 }

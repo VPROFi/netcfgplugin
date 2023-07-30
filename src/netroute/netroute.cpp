@@ -1012,8 +1012,6 @@ bool ArpRouteInfo::Delete(void)
 	int res = 0;
 	*ptr = 0;
 
-	LOG_INFO("ArpRouteInfo::Delete\n");
-
 	switch(sa_family) {
 	case AF_INET:
 		if( (res = snprintf(ptr, size, "arp -n -d %S", ip.c_str())) < 0 || size < res )

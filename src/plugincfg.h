@@ -92,29 +92,43 @@ typedef enum {
 	MaxPanelIndex
 } PanelIndex;
 
+
 class PluginCfg {
 
 	private:
 		static std::map<PanelIndex, CfgDefaults> def;
 		static size_t init;
 
-		const char * GetPanelName(PanelIndex index);
+		const char * GetPanelName(PanelIndex index) const;
 
-		bool addToDisksMenu;
-		bool addToPluginsMenu;
-		bool logEnable;
+		static bool logEnable;
 
 		const wchar_t * GetMsg(int msgId);
+
+		friend LONG_PTR WINAPI CfgDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2);
+
+		void SaveConfig(void) const;
+
 	public:
 		explicit PluginCfg();
 		~PluginCfg();
+
+		static bool interfacesAddToDisksMenu;
+		static bool interfacesAddToPluginsMenu;
+
+		static bool routesAddToDisksMenu;
+		static bool routesAddToPluginsMenu;
+
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		static bool mcinetPanelValid;
+		static bool mcinet6PanelValid;
+		#endif
 
 		void FillPanelData(struct PanelData * data, PanelIndex index);
 		void ReloadPanelString(struct PanelData * data, PanelIndex index);
 
 		void GetPluginInfo(struct PluginInfo *info);
 		int Configure(int itemNumber);
-		bool LogEnable(void) const {return logEnable;};
 };
 
 #endif /* __CONFIGPLUGIN_H__ */

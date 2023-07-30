@@ -148,8 +148,6 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 {
 	static NetcfgArpRoute * rtCfg = 0;
 
-	LOG_INFO("MSG: 0x%08X, param1 %u\n", msg, param1);
-
 	switch( msg ) {
 
 	case DN_INITDIALOG:
@@ -434,20 +432,12 @@ int NetcfgArpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlStat
 	if( controlState == 0 ) {
 		switch( key ) {
 		case VK_F8:
-			{
 			change = DeleteArp();
 			return TRUE;
-			}
 		case VK_F4:
 			change = EditArp();
 			return TRUE;
-		case VK_F1:
-		case VK_F10:
-			return FALSE;
 		}
-
-		if( key >= VK_F1 && key <= VK_F12 )
-			return TRUE;
 	}
 
 	if( controlState == PKF_SHIFT && key == VK_F4 ) {
@@ -455,7 +445,7 @@ int NetcfgArpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlStat
 		return TRUE;
 	}
 
-	return FALSE;
+	return GetPanelTitleKey(key, controlState) != 0;
 }
 
 
@@ -470,7 +460,13 @@ int NetcfgArpRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItems
 	PluginPanelItem * pi = *pPanelItem;
 	for( const auto & item : arp ) {
 		pi->FindData.lpwszFileName = item.ip.c_str();
+
+		#if !defined(__APPLE__) && !defined(__FreeBSD__)				
+		pi->FindData.dwFileAttributes = (item.valid.type && item.type == RTN_UNICAST) ? FILE_ATTRIBUTE_EXECUTABLE:0;
+		#else
 		pi->FindData.dwFileAttributes = 0;
+		#endif
+
 		pi->FindData.nFileSize = 0;
 
 		PluginUserData * user_data = (PluginUserData *)malloc(sizeof(PluginUserData));

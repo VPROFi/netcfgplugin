@@ -56,13 +56,7 @@ int NetcfgTablesRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlS
 			}
 	}
 
-	if( key == VK_F1 || key == VK_F10 )
-		return FALSE;
-
-	if( key >= VK_F1 && key <= VK_F12 )
-		return TRUE;
-
-	return FALSE;
+	return GetPanelTitleKey(key, controlState) != 0;
 }
 
 int NetcfgTablesRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber)

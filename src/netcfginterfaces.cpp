@@ -699,5 +699,5 @@ int NetcfgInterfaces::ProcessKey(HANDLE hPlugin,int key,unsigned int controlStat
 		}
 	}
 
-	return FALSE;
+	return GetPanelTitleKey(key, controlState) != 0;
 }

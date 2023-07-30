@@ -117,6 +117,33 @@ const wchar_t * FarPanel::GetPanelTitle(void) const
 	return data->openInfo.PanelTitle;
 }
 
+const wchar_t * FarPanel::GetPanelTitleKey(int key, unsigned int controlState) const
+{
+	if( !(key >= VK_F1 && key <= VK_F12) )
+		return nullptr;
+
+	auto keyNum = key - VK_F1;
+	
+	switch( controlState ) {
+	case 0:
+		return data->openInfo.KeyBar->Titles[keyNum];
+	case PKF_SHIFT:
+		return data->openInfo.KeyBar->ShiftTitles[keyNum];
+	case PKF_CONTROL:
+		return data->openInfo.KeyBar->CtrlTitles[keyNum];
+	case PKF_ALT:
+		return data->openInfo.KeyBar->AltTitles[keyNum];
+	case (PKF_CONTROL|PKF_SHIFT):
+		return data->openInfo.KeyBar->CtrlShiftTitles[keyNum];
+	case (PKF_ALT|PKF_SHIFT):
+		return data->openInfo.KeyBar->AltShiftTitles[keyNum];
+	case (PKF_CONTROL|PKF_ALT):
+		return data->openInfo.KeyBar->CtrlAltTitles[keyNum];
+	};
+
+	return nullptr;
+}
+
 void FarPanel::FreeFindData(struct PluginPanelItem * panelItem, int itemsNumber)
 {
 	LOG_INFO("\n");

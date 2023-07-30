@@ -52,6 +52,7 @@ enum {
 	MNoAnyTcpdumpTask,
 
 	MConfigPluginSettings,
+	MConfigSaveSettings,
 	MMaxString
 };
 

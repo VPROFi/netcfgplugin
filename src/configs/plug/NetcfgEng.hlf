@@ -1,8 +1,50 @@
 .Language=English,English
-.PluginContents=Netconfig panel
+.PluginContents=Panel for configuring network interfaces and routes
 
 @Contents
-$ #Netconfig panel#
-    The Netconfig panel list network interfaces and
-tuning mac mtu ip ip6 by F4 key.
+$ #Panel for configuring network interfaces and routes#
+
+   ~Panel for configuring network interfaces~@InterfacePanel@
+   ~Panel for configuring network routes~@RoutePanel@
+   ~Configuration~@Config@
+
+@InterfacePanel
+$^#Panel for configuring network interfaces:#
+   The panel allows:
+
+  - view information (#name, ip addresses, bytes received/sent, MAC address (+permanent), ipv6 addresses#, etc.) about network interfaces
+
+  - edit information (#name (linux only), ip addresses, MAC address, ipv6 addresses, enable/disable, flags#, etc.) of the network interface
+
+  - save #network interface traffic# to a file
+
+
+@RoutePanel
+$^#Panel for configuring network routes:#
+   The panel allows:
+
+  - view information (#ipv4/ipv6, arp, multicast ipv4/ipv6#) about network routes
+
+  - #view, delete and edit rules# for ipv4/ipv6, multicast ipv4/ipv6 routes (policy routing)
+
+  - remove and edit information about (#ipv4/ipv6, arp#) routes
+
+@Config
+$^#Panel for configuring network interfaces and routes: Configuration#
+   In this dialog, you can change the following options:
+
+  #Add to disc menu#
+    Allows adding "Network Interface Configuration" "Network Route Configuration" to the disk menu.
+
+  #Add to plugins menu#
+    Allows adding "Network Interfaces Configuration" "Network Routes Configuration" items to the plug-in menu.
+
+  #Display logs#
+    Allows, prohibits the output of logs to a file (set file path).
+
+  #Display multicast route panels#
+    Enables, disables display of multicast ipv4/ipv6 route panels.
+
+  #Save configuration to file#
+    Saves the configuration to a file ($HOME/.config/far2l/plugins/netcfg/config.ini), additionally allows you to manually fine-tune the columns (width, display names, etc.).
 

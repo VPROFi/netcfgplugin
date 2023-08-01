@@ -607,7 +607,6 @@ int PluginCfg::Configure(int itemNumber)
 				SaveConfig();
 				break;
 			};
-			
 		}
 	}
 	return change;

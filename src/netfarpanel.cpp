@@ -76,12 +76,12 @@ uint8_t NetFarPanel::SelectFamily(HANDLE hDlg, uint32_t setIndex)
 	static const wchar_t * menuElements[] = {
 		L"inet",
 		L"inet6",
-		L"link",
 	#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		L"link",
 		L"mpls",
 		L"bridge",
-	#endif
 		L""
+	#endif
 		};
 	auto index = Select(hDlg, &menuElements[0], ARRAYSIZE(menuElements), setIndex);
 	static const uint8_t family[] = {

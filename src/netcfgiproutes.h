@@ -3,10 +3,27 @@
 
 #include "netfarpanel.h"
 #include "netroute/netroutes.h"
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include "netcfgiptables.h"
 #include "netcfgrules.h"
+#endif
+
 #include "netcfgarp.h"
 #include <memory>
+
+enum {
+	RoutesColumnViaIndex,
+	RoutesColumnDevIndex,
+	RoutesColumnPrefsrcIndex,
+	#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	RoutesColumnTypeIndex,
+	#else
+	RoutesColumnFlagsIndex,
+	#endif
+	RoutesColumnMetricIndex,
+	RoutesColumnDataMaxIndex
+};
 
 #define ROUTE_TABLE_DIRS static_cast<uint32_t>(-1)
 

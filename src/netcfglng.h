@@ -18,6 +18,7 @@ enum {
 
 	MPanelNetworkRouteRulesTitle,
 
+	MF7Settings,
 	MF2,
 	MF4,
 	MF5,

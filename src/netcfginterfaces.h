@@ -5,6 +5,23 @@
 #include "netif/netifs.h"
 #include <memory>
 
+enum {
+	InterfaceColumnIpIndex,
+	InterfaceColumnMacIndex,
+	InterfaceColumnIp6Index,
+	InterfaceColumnMtuIndex,
+	InterfaceColumnRecvBytesIndex,
+	InterfaceColumnSendBytesIndex,
+	InterfaceColumnRecvPktsIndex,
+	InterfaceColumnSendPktsIndex,
+	InterfaceColumnRecvErrsIndex,
+	InterfaceColumnSendErrsIndex,
+	InterfaceColumnMulticastIndex,
+	InterfaceColumnCollisionsIndex,
+	InterfaceColumnPermanentMacIndex,
+	InterfaceColumnMaxIndex
+};
+
 class NetcfgInterfaces : public FarPanel
 {
 private:

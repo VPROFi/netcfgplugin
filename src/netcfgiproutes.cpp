@@ -997,13 +997,26 @@ enum {
 	WinEditIpExpireEditIndex,
 
 	WinEditIpSeparator3TextIndex,
+
+	WinEditIpIfscopeTextIndex,
+	WinEditIpIfscopeButtonIndex,
+
 	WinEditIpNormalRadiobuttonIndex,
 	WinEditIpRejectRadiobuttonIndex,
 	WinEditIpBlackholeRadiobuttonIndex,
+
+	WinEditIpSeparator4TextIndex,
 	WinEditIpStaticCheckboxIndex,
+
+	WinEditIpCloningCheckboxIndex,
+	WinEditIpProto1CheckboxIndex,
+	WinEditIpProto2CheckboxIndex,
+	WinEditIpXresolveCheckboxIndex,
+	WinEditIpLlinfoCheckboxIndex,
 
 	WinEditIpPrefixMaxIndex
 };
+
 
 LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2)
 {
@@ -1020,10 +1033,19 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 		break;
 	case DN_BTNCLICK:
 		assert( rtCfg != 0 );
-		if( param1 == WinEditIpGatewayInterfaceButtonIndex ) {
+		switch( param1 ) {
+		case WinEditIpGatewayInterfaceButtonIndex:
 			rtCfg->new_rt.valid.ifnameIndex = rtCfg->SelectInterface(hDlg, param1, &rtCfg->new_rt.ifnameIndex);
 			return true;
-		}
+		case WinEditIpIfscopeButtonIndex:
+			{
+			uint32_t scope_index;
+			rtCfg->SelectInterface(hDlg, param1, &scope_index);
+			return true;
+			}
+		default:
+			break;
+		};
 		break;
 	};
 	return NetCfgPlugin::psi.DefDlgProc(hDlg, msg, param1, param2);
@@ -1053,10 +1075,23 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 		{DI_EDIT,      false,  70,             78,           0,                 {.ptrData = 0}},
 
 		{DI_TEXT,      true,    5,              0,           0,                 {0}},
-		{DI_RADIOBUTTON, true,   5,             0,           DIF_GROUP,         {.ptrData = L"normal"}},
-		{DI_RADIOBUTTON, false, 16,             0,           0,                 {.ptrData = L"reject"}},
-		{DI_RADIOBUTTON, false, 27,             0,           0,                 {.ptrData = L"blackhole"}},
-		{DI_CHECKBOX,  false,  41,              0,           0,                 {.ptrData = L"static"}},
+
+		{DI_TEXT,      true,    5,              0,           0,                 {.ptrData = L"ifscope:"}},
+		{DI_BUTTON,    false,  14,              0,           0,                 {0}},
+
+
+		{DI_RADIOBUTTON, false,44,              0,           DIF_GROUP,         {.ptrData = L"normal"}},
+		{DI_RADIOBUTTON, false,55,              0,           0,                 {.ptrData = L"reject"}},
+		{DI_RADIOBUTTON, false,66,              0,           0,                 {.ptrData = L"blackhole"}},
+
+
+		{DI_TEXT,      true,    5,              0,           0,                 {0}},
+		{DI_CHECKBOX,  true,    5,              0,           0,                 {.ptrData = L"static"}},
+		{DI_CHECKBOX,  false,  17,              0,           0,                 {.ptrData = L"cloning"}},
+		{DI_CHECKBOX,  false,  30,              0,           0,                 {.ptrData = L"proto1"}},
+		{DI_CHECKBOX,  false,  42,              0,           0,                 {.ptrData = L"proto2"}},
+		{DI_CHECKBOX,  false,  54,              0,           0,                 {.ptrData = L"xresolve"}},
+		{DI_CHECKBOX,  false,  67,              0,           0,                 {.ptrData = L"llinfo"}},
 
 		{DI_ENDDIALOG, 0}
 	};
@@ -1088,19 +1123,29 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	if( new_rt.osdep.expire )
 		fdc.SetCountText(WinEditIpExpireEditIndex, new_rt.osdep.expire);
 
-	if( (new_rt.flags & RTF_WASCLONED) && (new_rt.osdep.parentflags & RTF_PRCLONING) )
-		for(int i = WinEditIpCaptionIndex+1; i < WinEditIpPrefixMaxIndex; i++ )
-			fdc.OrFlags(i, DIF_DISABLE);
 
-	if( new_rt.flags & RTF_BLACKHOLE )
-		fdc.SetSelected(WinEditIpBlackholeRadiobuttonIndex, true);
-	else if( new_rt.flags & RTF_REJECT )
-		fdc.SetSelected(WinEditIpRejectRadiobuttonIndex, true);
-	else
-		fdc.SetSelected(WinEditIpNormalRadiobuttonIndex, true);
-	if( new_rt.flags & RTF_STATIC )
-		fdc.SetSelected(WinEditIpStaticCheckboxIndex, true);
-
+	if( new_rt.valid.flags ) {
+		if( new_rt.flags & RTF_BLACKHOLE )
+			fdc.SetSelected(WinEditIpBlackholeRadiobuttonIndex, true);
+		else if( new_rt.flags & RTF_REJECT )
+			fdc.SetSelected(WinEditIpRejectRadiobuttonIndex, true);
+		else
+			fdc.SetSelected(WinEditIpNormalRadiobuttonIndex, true);
+		if( new_rt.flags & RTF_IFSCOPE && new_rt.valid.iface )
+			fdc.SetText(WinEditIpIfscopeButtonIndex, new_rt.iface.c_str());
+		if( new_rt.flags & RTF_STATIC )
+			fdc.SetSelected(WinEditIpStaticCheckboxIndex, true);
+		if( new_rt.flags & RTF_CLONING )
+			fdc.SetSelected(WinEditIpCloningCheckboxIndex, true);
+		if( new_rt.flags & RTF_PROTO1 )
+			fdc.SetSelected(WinEditIpProto1CheckboxIndex, true);
+		if( new_rt.flags & RTF_PROTO2 )
+			fdc.SetSelected(WinEditIpProto2CheckboxIndex, true);
+		if( new_rt.flags & RTF_XRESOLVE )
+			fdc.SetSelected(WinEditIpXresolveCheckboxIndex, true);
+		if( new_rt.flags & RTF_LLINFO )
+			fdc.SetSelected(WinEditIpLlinfoCheckboxIndex, true);
+	}
 
 	auto offSuffix = fdc.AppendOkCancel();
 
@@ -1152,6 +1197,15 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 					new_rt.valid.gateway = !item.empty;
 				}
 				break;
+			case WinEditIpIfscopeButtonIndex:
+				new_rt.iface = item.newVal.ptrData;
+				new_rt.valid.iface = !item.empty;
+				if( new_rt.valid.iface )
+					new_rt.flags |= RTF_IFSCOPE;
+				else
+					new_rt.flags &= ~RTF_IFSCOPE;
+				new_rt.valid.flags = 1;
+				break;
 			case WinEditIpExpireEditIndex:
 				new_rt.osdep.expire = NetCfgPlugin::FSF.atoi(item.newVal.ptrData);
 				new_rt.valid.expire = !item.empty;
@@ -1184,6 +1238,42 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 					new_rt.flags |= RTF_STATIC;
 				else
 					new_rt.flags &= ~RTF_STATIC;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpCloningCheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_CLONING;
+				else
+					new_rt.flags &= ~RTF_CLONING;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpProto1CheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_PROTO1;
+				else
+					new_rt.flags &= ~RTF_PROTO1;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpProto2CheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_PROTO2;
+				else
+					new_rt.flags &= ~RTF_PROTO2;
+				new_rt.valid.flags = 1;
+				break;
+			case WinEditIpXresolveCheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_XRESOLVE;
+				else
+					new_rt.flags &= ~RTF_XRESOLVE;
+				new_rt.valid.flags = 1;
+				break;
+
+			case WinEditIpLlinfoCheckboxIndex:
+				if( item.newVal.Selected )
+					new_rt.flags |= RTF_LLINFO;
+				else
+					new_rt.flags &= ~RTF_LLINFO;
 				new_rt.valid.flags = 1;
 				break;
 			default:
@@ -1232,7 +1322,10 @@ bool NetcfgIpRoute::CreateIpRoute(void)
 
 	new_rt.valid.table = 1;
 	new_rt.osdep.table = table != 0 ? table:RT_TABLE_MAIN;
+
 	new_nh = NextHope();
+	#else
+	new_rt.osdep.gateway_type = IpRouteInfo::IpGatewayType;
 	#endif
 	if( FillNewIpRoute() )
 		change = new_rt.CreateIpRoute();
@@ -1375,13 +1468,7 @@ int NetcfgIpRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsN
 		#endif
 
 		pi->FindData.lpwszFileName = item.destIpandMask.empty() ? default_route:item.destIpandMask.c_str();
-
-		#if !defined(__APPLE__) && !defined(__FreeBSD__)				
 		pi->FindData.dwFileAttributes = 0;
-		#else
-		pi->FindData.dwFileAttributes = (item.flags & RTF_WASCLONED) && (item.osdep.parentflags & RTF_PRCLONING) ? (FILE_ATTRIBUTE_OFFLINE|FILE_ATTRIBUTE_HIDDEN):0;
-		#endif
-
 		pi->FindData.nFileSize = 0;
 
 		PluginUserData * user_data = (PluginUserData *)malloc(sizeof(PluginUserData));
@@ -1404,11 +1491,14 @@ int NetcfgIpRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsN
 
 			CustomColumnData[RoutesColumnDevIndex] = wcsdup(item.iface.c_str());
 			CustomColumnData[RoutesColumnPrefsrcIndex] = wcsdup(item.prefsrc.c_str());
-			#if !defined(__APPLE__) && !defined(__FreeBSD__)				
+			#if !defined(__APPLE__) && !defined(__FreeBSD__)
 			CustomColumnData[RoutesColumnTypeIndex] = wcsdup(item.valid.protocol ? towstr(rtprotocoltype(item.osdep.protocol)).c_str():empty_string);
 			CustomColumnData[RoutesColumnMetricIndex] = item.valid.metric ? DublicateCountString(item.osdep.metric):wcsdup(empty_string);
 			#else
-			CustomColumnData[RoutesColumnTypeIndex] = wcsdup(empty_string);
+			if( item.valid.flags )
+				CustomColumnData[RoutesColumnFlagsIndex] = wcsdup(towstr(RouteFlagsToString(item.flags, 0)).c_str());
+			else
+				CustomColumnData[RoutesColumnFlagsIndex] = wcsdup(empty_string);
 			CustomColumnData[RoutesColumnMetricIndex] = DublicateCountString(item.osdep.expire);
 			#endif
 			pi->CustomColumnNumber = RoutesColumnDataMaxIndex;

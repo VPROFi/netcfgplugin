@@ -137,6 +137,17 @@ enum {
 
 	WinEditArpRouterCheckboxIndex,
 	WinEditArpExternLearnCheckboxIndex,
+#else
+
+	WinEditArpPublicCheckboxIndex,
+	WinEditArpProxyCheckboxIndex,
+
+	WinEditArpIfscopeTextIndex,
+	WinEditArpIfscopeButtonIndex,
+
+	WinEditArpNormalRadiobuttonIndex,
+	WinEditArpRejectRadiobuttonIndex,
+	WinEditArpBlackholeRadiobuttonIndex,
 #endif
 
 	WinEditArpMaxIndex
@@ -174,6 +185,12 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 		switch( param1 ) {
 		case WinEditArpFamilyButtonIndex:
 			rtCfg->new_a.sa_family = rtCfg->SelectFamily(hDlg, param1);
+			#if defined(__APPLE__) || defined(__FreeBSD__)
+			ChangeDialogItemsView(hDlg, WinEditArpIfscopeTextIndex, WinEditArpBlackholeRadiobuttonIndex, rtCfg->new_a.sa_family == AF_INET6, false);
+			ChangeDialogItemsView(hDlg, WinEditArpIfaceTextIndex, WinEditArpIfaceButtonIndex, rtCfg->new_a.sa_family == AF_INET, false);
+			ChangeDialogItemsView(hDlg, WinEditArpProxyCheckboxIndex, WinEditArpProxyCheckboxIndex, rtCfg->new_a.sa_family == AF_INET, false);
+			ChangeDialogItemsView(hDlg, WinEditArpPublicCheckboxIndex, WinEditArpPublicCheckboxIndex, rtCfg->new_a.sa_family == AF_INET6, false);
+			#endif
 			return true;
 		case WinEditArpIfaceButtonIndex:
 			rtCfg->new_a.valid.iface = rtCfg->SelectInterface(hDlg, param1, nullptr);
@@ -215,6 +232,13 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 			rtCfg->new_a.valid.state = 1;
 			return true;
 		}
+#else
+		case WinEditArpIfscopeButtonIndex:
+			{
+			uint32_t scope_index;
+			rtCfg->SelectInterface(hDlg, param1, &scope_index);
+			return true;
+			}
 #endif
 		};
 		break;
@@ -263,6 +287,17 @@ bool NetcfgArpRoute::FillNewArp(void)
 
 		{DI_CHECKBOX,  false,  27,             0,           0,                  {.ptrData = L"router"}},
 		{DI_CHECKBOX,  false,  38,             0,           0,                  {.ptrData = L"extern_learn"}},
+#else
+
+		{DI_CHECKBOX,  false,   5,              0,           DIF_HIDDEN,        {.ptrData = L"public"}},
+		{DI_CHECKBOX,  false,  22,              0,           DIF_HIDDEN,        {.ptrData = L"proxy"}},
+
+		{DI_TEXT,      false,  22,              0,           0,                 {.ptrData = L"ifscope:"}},
+		{DI_BUTTON,    false,  32,              0,           0,                 {0}},
+
+		{DI_RADIOBUTTON, false,44,              0,           DIF_GROUP,         {.ptrData = L"normal"}},
+		{DI_RADIOBUTTON, false,55,              0,           0,                 {.ptrData = L"reject"}},
+		{DI_RADIOBUTTON, false,66,              0,           0,                 {.ptrData = L"blackhole"}},
 #endif
 
 		{DI_ENDDIALOG, 0}
@@ -308,6 +343,31 @@ bool NetcfgArpRoute::FillNewArp(void)
 
 	if( new_a.valid.state )
 		fdc.SetText(WinEditArpStateButtonIndex, towstr(ndmsgstate(new_a.state)).c_str(), true);
+
+#else
+	if( new_a.valid.flags ) {
+		if( new_a.flags & RTF_BLACKHOLE )
+			fdc.SetSelected(WinEditArpBlackholeRadiobuttonIndex, true);
+		else if( new_a.flags & RTF_REJECT )
+			fdc.SetSelected(WinEditArpRejectRadiobuttonIndex, true);
+		else
+			fdc.SetSelected(WinEditArpNormalRadiobuttonIndex, true);
+		if( new_a.flags & RTF_IFSCOPE && new_a.valid.iface )
+			fdc.SetText(WinEditArpIfscopeButtonIndex, new_a.iface.c_str());
+
+		if( new_a.flags & RTF_ANNOUNCE ) {
+			fdc.SetSelected(WinEditArpPublicCheckboxIndex, true);
+			fdc.SetSelected(WinEditArpProxyCheckboxIndex, true);
+		}
+	}
+
+	if( new_a.sa_family == AF_INET6) {
+		fdc.HideItems(WinEditArpIfscopeTextIndex, WinEditArpBlackholeRadiobuttonIndex);
+		fdc.AndFlags(WinEditArpProxyCheckboxIndex, ~DIF_HIDDEN);
+	} else {
+		fdc.HideItems(WinEditArpIfaceTextIndex, WinEditArpIfaceButtonIndex);
+		fdc.AndFlags(WinEditArpPublicCheckboxIndex, ~DIF_HIDDEN);
+	}
 #endif
 
 	auto offSuffix = fdc.AppendOkCancel();
@@ -381,6 +441,43 @@ bool NetcfgArpRoute::FillNewArp(void)
 					new_a.flags &= ~NTF_EXT_LEARNED;
 				new_a.valid.flags = 1;
 				break;
+#else
+			case WinEditArpIfscopeButtonIndex:
+				new_a.iface = item.newVal.ptrData;
+				new_a.valid.iface = !item.empty;
+				if( new_a.valid.iface )
+					new_a.flags |= RTF_IFSCOPE;
+				else
+					new_a.flags &= ~RTF_IFSCOPE;
+				new_a.valid.flags = 1;
+				break;
+			case WinEditArpBlackholeRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_a.flags |= RTF_BLACKHOLE;
+				else
+					new_a.flags &= ~RTF_BLACKHOLE;
+				new_a.valid.flags = 1;
+				break;
+			case WinEditArpRejectRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_a.flags |= RTF_REJECT;
+				else
+					new_a.flags &= ~RTF_REJECT;
+				new_a.valid.flags = 1;
+				break;
+			case WinEditArpNormalRadiobuttonIndex:
+				if( item.newVal.Selected )
+					new_a.flags &= ~(RTF_BLACKHOLE|RTF_REJECT);
+				new_a.valid.flags = 1;
+				break;
+			case WinEditArpPublicCheckboxIndex:
+			case WinEditArpProxyCheckboxIndex:
+				if( item.newVal.Selected )
+					new_a.flags |= RTF_ANNOUNCE;
+				else
+					new_a.flags &= ~RTF_ANNOUNCE;
+				new_a.valid.flags = 1;
+				break;
 #endif
 			};
 		}
@@ -418,6 +515,11 @@ bool NetcfgArpRoute::CreateArp(void)
 
 	a = nullptr;
 	new_a = ArpRouteInfo();
+
+#if defined(__APPLE__) || defined(__FreeBSD__)	
+	new_a.valid.flags = 1;
+	new_a.flags |= RTF_IFSCOPE;
+#endif
 
 	if( FillNewArp() )
 		change = new_a.Create();
@@ -486,7 +588,10 @@ int NetcfgArpRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItems
 			CustomColumnData[ArpRoutesColumnTypeIndex] = wcsdup(towstr(rttype(item.type)).c_str());
 			CustomColumnData[ArpRoutesColumnStateIndex] = wcsdup(towstr(ndmsgstate(item.state)).c_str());
 			#else
-			CustomColumnData[ArpRoutesColumnTypeIndex] = wcsdup(empty_string);
+			if( item.valid.flags )
+				CustomColumnData[ArpRoutesColumnFlagsIndex] = wcsdup(towstr(RouteFlagsToString(item.flags, 0)).c_str());
+			else
+				CustomColumnData[ArpRoutesColumnFlagsIndex] = wcsdup(empty_string);
 			CustomColumnData[ArpRoutesColumnStateIndex] = wcsdup(empty_string);
 			#endif
 			pi->CustomColumnNumber = ArpRoutesColumnMaxIndex;

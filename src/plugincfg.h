@@ -20,51 +20,6 @@ enum {
 	PanelModeMax,
 };
 
-enum {
-	InterfaceColumnIpIndex,
-	InterfaceColumnMacIndex,
-	InterfaceColumnIp6Index,
-	InterfaceColumnMtuIndex,
-	InterfaceColumnRecvBytesIndex,
-	InterfaceColumnSendBytesIndex,
-	InterfaceColumnRecvPktsIndex,
-	InterfaceColumnSendPktsIndex,
-	InterfaceColumnRecvErrsIndex,
-	InterfaceColumnSendErrsIndex,
-	InterfaceColumnMulticastIndex,
-	InterfaceColumnCollisionsIndex,
-	InterfaceColumnPermanentMacIndex,
-	InterfaceColumnMaxIndex
-};
-
-enum {
-	RoutesColumnViaIndex,
-	RoutesColumnDevIndex,
-	RoutesColumnPrefsrcIndex,
-	RoutesColumnTypeIndex,
-	RoutesColumnMetricIndex,
-	RoutesColumnDataMaxIndex
-};
-
-
-enum {
-	ArpRoutesColumnMacIndex,
-	ArpRoutesColumnDevIndex,
-	ArpRoutesColumnTypeIndex,
-	ArpRoutesColumnStateIndex,
-	ArpRoutesColumnMaxIndex
-};
-
-enum {
-	RouteRuleColumnRuleIndex,
-	RouteRuleColumnMaxIndex
-};
-
-enum {
-	RouteIpTablesColumnTotalIndex,
-	RouteIpTablesColumnMaxIndex
-};
-
 typedef struct {
 	const wchar_t * statusColumnTypes;
 	const wchar_t * statusColumnWidths;

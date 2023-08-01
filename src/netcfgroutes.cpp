@@ -58,6 +58,61 @@ NetcfgRoutes::~NetcfgRoutes()
 
 }
 
+const int EDIT_SETTINGS_DIALOG_WIDTH = 84;
+
+enum {
+	WinEditSetCaptionIndex,
+	WinEditSetIpv4ForwardingCheckboxIndex,
+	WinEditSetIpv6ForwardingCheckboxIndex,
+	WinEditSetMaxIndex
+};
+
+void NetcfgRoutes::EditSettings(void)
+{
+	static const DlgConstructorItem dialog[] = {
+		//  Type       NewLine X1              X2         Flags                PtrData
+		{DI_DOUBLEBOX, false,  DEFAUL_X_START, EDIT_SETTINGS_DIALOG_WIDTH-4,  0,     {.ptrData = L"Edit settings:"}},
+		{DI_CHECKBOX,  true,   5,             0,           0,                  {.ptrData = L"ipv4 forwarding"}},
+		{DI_CHECKBOX,  false, 42,             0,           0,                  {.ptrData = L"ipv6 forwarding"}},
+		{DI_ENDDIALOG, 0}
+	};
+
+	FarDlgConstructor fdc(&dialog[0]);
+
+	if( nrts->ipv4_forwarding )
+		fdc.SetSelected(WinEditSetIpv4ForwardingCheckboxIndex, true);
+
+	if( nrts->ipv6_forwarding )
+		fdc.SetSelected(WinEditSetIpv6ForwardingCheckboxIndex, true);
+
+	auto offSuffix = fdc.AppendOkCancel();
+
+	fdc.SetDefaultButton(offSuffix + WinSuffixOkIndex);
+	fdc.SetFocus(offSuffix + WinSuffixOkIndex);
+
+	FarDialog dlg(&fdc);
+
+	if( (dlg.Run() - offSuffix) == WinSuffixOkIndex ) {
+
+		std::vector<ItemChange> chlst;
+
+		if( !dlg.CreateChangeList(chlst) )
+			return;
+
+		for( auto & item : chlst ) {
+			switch( item.itemNum ) {
+			case WinEditSetIpv4ForwardingCheckboxIndex:
+				change |= nrts->SetIpForwarding(item.newVal.Selected != 0);
+				break;
+			case WinEditSetIpv6ForwardingCheckboxIndex:
+				change |= nrts->SetIp6Forwarding(item.newVal.Selected != 0);
+				break;
+			};
+		}
+	}
+	return;
+}
+
 int NetcfgRoutes::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState, bool & redraw)
 {
 	if( controlState == 0 ) {
@@ -72,6 +127,10 @@ int NetcfgRoutes::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState,
 		case VK_F2:
 			change = true;
 			redraw = true;
+			return TRUE;
+		case VK_F7:
+			EditSettings();
+			redraw = change;
 			return TRUE;
 		}
 	}

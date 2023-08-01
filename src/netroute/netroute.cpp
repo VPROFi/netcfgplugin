@@ -901,11 +901,24 @@ bool IpRouteInfo::CreateIpRoute(void)
 	size -= res;
 	res = 0;
 
-	if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s", \
-		flags & RTF_BLACKHOLE ? " -blackhole":"", \
-		flags & RTF_REJECT ? " -reject":"", \
-		flags & RTF_STATIC ? " -static":" -nostatic")) < 0) || size < res )
+	if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s%s%s%s%s%s",
+		flags & RTF_BLACKHOLE ? " -blackhole":"",
+		flags & RTF_REJECT ? " -reject":"",
+		flags & RTF_STATIC ? " -static":" -nostatic",
+		flags & RTF_CLONING ? " -cloning":"",
+		flags & RTF_PROTO1 ? " -proto1":"",
+		flags & RTF_PROTO2 ? " -proto2":"",
+		flags & RTF_XRESOLVE ? " -xresolve":"",
+		flags & RTF_LLINFO ? " -llinfo":"")) < 0) || size < res )
 		return false;
+
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.flags && valid.iface && (flags & RTF_IFSCOPE) )
+		if( (res = snprintf(ptr, size, " -ifscope %S", iface.c_str() )) < 0 || size < res )
+			return false;
 
 	return RootExec(buf.get()) == 0;
 }
@@ -955,6 +968,14 @@ bool IpRouteInfo::DeleteIpRoute(void)
 		}
 	}
 
+	ptr += res;
+	size -= res;
+	res = 0;
+
+	if( valid.flags && valid.iface && (flags & RTF_IFSCOPE) )
+		if( (res = snprintf(ptr, size, " -ifscope %S", iface.c_str() )) < 0 || size < res )
+			return false;
+
 	return RootExec(buf.get()) == 0;
 }
 
@@ -975,8 +996,19 @@ bool ArpRouteInfo::Create(void)
 		size -= res;
 		res = 0;
 
-		if( (valid.iface && (res = snprintf(ptr, size, " ifscope %S", iface.c_str())) < 0) || size < res )
+		if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s",
+			flags & RTF_BLACKHOLE ? " blackhole":"",
+			flags & RTF_REJECT ? " reject":"",
+			flags & RTF_ANNOUNCE ? " pub":"")) < 0) || size < res )
 			return false;
+
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( valid.flags && valid.iface && (flags & RTF_IFSCOPE) )
+			if( (res = snprintf(ptr, size, " ifscope %S", iface.c_str() )) < 0 || size < res )
+				return false;
 		break;
 	case AF_INET6:
 		if( (res = snprintf(ptr, size, "ndp -s -n %S", ip.c_str())) < 0 || size < res )
@@ -995,6 +1027,13 @@ bool ArpRouteInfo::Create(void)
 		if( (valid.mac && (res = snprintf(ptr, size, " %S", mac.c_str())) < 0) || size < res )
 			return false;
 
+		ptr += res;
+		size -= res;
+		res = 0;
+
+		if( (valid.flags && (res = snprintf(ptr, size, "%s",
+			flags & RTF_ANNOUNCE ? " proxy":"")) < 0) || size < res )
+			return false;
 		break;
 	default:
 		LOG_ERROR("unsupported family %u(%s)\n", sa_family, familyname(sa_family));
@@ -1021,8 +1060,9 @@ bool ArpRouteInfo::Delete(void)
 		size -= res;
 		res = 0;
 
-		if( (valid.iface && (res = snprintf(ptr, size, " ifscope %S", iface.c_str())) < 0) || size < res )
-			return false;
+		if( valid.flags && valid.iface && (flags & RTF_IFSCOPE) )
+			if( (res = snprintf(ptr, size, " ifscope %S", iface.c_str() )) < 0 || size < res )
+				return false;
 		break;
 	case AF_INET6:
 		if( (res = snprintf(ptr, size, "ndp -d -n %S", ip.c_str())) < 0 || size < res )

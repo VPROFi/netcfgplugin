@@ -7,6 +7,11 @@
 #include "netcfgarp.h"
 #include <memory>
 
+enum {
+	RouteIpTablesColumnTotalIndex,
+	RouteIpTablesColumnMaxIndex
+};
+
 class NetcfgTablesRoute : public FarPanel
 {
 private:

@@ -5,6 +5,17 @@
 #include "netroute/netroutes.h"
 #include <memory>
 
+enum {
+	ArpRoutesColumnMacIndex,
+	ArpRoutesColumnDevIndex,
+	#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	ArpRoutesColumnTypeIndex,
+	#else
+	ArpRoutesColumnFlagsIndex,
+	#endif
+	ArpRoutesColumnStateIndex,
+	ArpRoutesColumnMaxIndex
+};
 
 class NetcfgArpRoute : public NetFarPanel
 {

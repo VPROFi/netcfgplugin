@@ -5,7 +5,11 @@
 #include "netroute/netroutes.h"
 #include <memory>
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
+enum {
+	RouteRuleColumnRuleIndex,
+	RouteRuleColumnMaxIndex
+};
+
 class NetcfgIpRule : public NetFarPanel
 {
 private:
@@ -29,6 +33,5 @@ public:
 	explicit NetcfgIpRule(uint32_t index, uint8_t family, std::deque<RuleRouteInfo> & rule, std::map<uint32_t, std::wstring> & ifs);
 	~NetcfgIpRule();
 };
-#endif
 
 #endif // __NETCFGRULES_H__

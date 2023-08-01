@@ -673,6 +673,8 @@ const char * rtnhflagsname(uint8_t flags); // RTNH_F_
 
 const char * ndmsgflagsname(uint8_t flags); // NTF_
 
+//NTF_PROXY // хост отвечает на запрос адреса своим MAC (как ARP сервер)
+
 #ifndef NTF_EXT_MANAGED
 #define NTF_EXT_MANAGED		(1 << 0)
 #endif

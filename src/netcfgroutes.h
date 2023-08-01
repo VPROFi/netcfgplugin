@@ -4,7 +4,6 @@
 #include "farpanel.h"
 #include "netroute/netroutes.h"
 #include "netcfgiproutes.h"
-#include "netcfgrules.h"
 #include "netcfgarp.h"
 #include <memory>
 
@@ -20,6 +19,8 @@ private:
 	std::vector<std::unique_ptr<FarPanel>> panels;
 
 	bool change;
+
+	void EditSettings(void);
 
 	// copy and assignment not allowed
 	NetcfgRoutes(const NetcfgRoutes&) = delete;

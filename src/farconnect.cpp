@@ -125,12 +125,6 @@ SHAREDSYMBOL HANDLE WINAPI _export OpenPluginW(int openFrom, INT_PTR item)
 	LOG_INFO("(int OpenFrom=%u,INT_PTR Item=%u)\n", openFrom, item);
 
 	return gNet->OpenPlugin(openFrom, item);
-
-/*	if( !gNet->OpenPlugin(openFrom, item) )
-		return INVALID_HANDLE_VALUE;
-
-	LOG_INFO("(int OpenFrom=%u,INT_PTR Item=%u) return (HANDLE)gNet %p\n", openFrom, item, gNet);
-	return (HANDLE)gNet;*/
 }
 
 SHAREDSYMBOL void WINAPI _export ClosePluginW(HANDLE hPlugin)

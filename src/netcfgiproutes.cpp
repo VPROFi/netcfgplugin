@@ -1391,11 +1391,6 @@ int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState
 		return TRUE;
 	}
 
-	//PKF_CONTROL     = 0x00000001,
-	//PKF_ALT         = 0x00000002,
-	//PKF_SHIFT       = 0x00000004,
-	//PKF_PREPROCESS  = 0x00080000,
-
 	return GetPanelTitleKey(key, controlState) != 0;
 }
 

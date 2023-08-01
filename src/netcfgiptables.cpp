@@ -44,7 +44,6 @@ int NetcfgTablesRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlS
 			PanelInfo pi = {0};
 			if( auto ppi = GetCurrentPanelItem(&pi) ) {
 				PanelRedrawInfo pri;
-				//table = ppi->FindData.nFileSize;
 				topIndex = pi.TopPanelItem;
 				dirIndex = pi.CurrentItem;
 				pri.TopPanelItem = 0;

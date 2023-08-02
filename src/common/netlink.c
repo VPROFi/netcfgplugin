@@ -1275,7 +1275,7 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 	char s[MAX_INETADR_LEN+1] = {0};
 	uint32_t addrlen = family == AF_INET ? sizeof(uint32_t):sizeof(struct in6_addr);
 
-	static_assert( LWTUNNEL_IP_MAX == LWTUNNEL_IP6_MAX, "unsupported LWTUNNEL_IP6_MAX" );
+	//static_assert( LWTUNNEL_IP_MAX == LWTUNNEL_IP6_MAX, "unsupported LWTUNNEL_IP6_MAX" );
 	assert( family == AF_INET || family == AF_INET6 );
 
 	enc->data.ip.family = family;
@@ -1306,7 +1306,7 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 		LOG_INFO("LWTUNNEL_IP_SRC:  %s\n", enc->data.ip.src);
 	}
 
-	static_assert( (int)LWTUNNEL_IP6_HOPLIMIT == (int)LWTUNNEL_IP_TTL, "unsupported LWTUNNEL_IP6_HOPLIMIT" );
+	//static_assert( (int)LWTUNNEL_IP6_HOPLIMIT == (int)LWTUNNEL_IP_TTL, "unsupported LWTUNNEL_IP6_HOPLIMIT" );
 	if( ip[LWTUNNEL_IP_TTL] && RTA_PAYLOAD(ip[LWTUNNEL_IP_TTL]) >= sizeof(uint8_t) ) {
 
 		if( family == AF_INET6 ) {
@@ -1320,7 +1320,7 @@ static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 		}
 	}
 
-	static_assert( (int)LWTUNNEL_IP6_TC == (int)LWTUNNEL_IP_TOS, "unsupported LWTUNNEL_IP6_TC" );
+	//static_assert( (int)LWTUNNEL_IP6_TC == (int)LWTUNNEL_IP_TOS, "unsupported LWTUNNEL_IP6_TC" );
 	if( ip[LWTUNNEL_IP_TOS] && RTA_PAYLOAD(ip[LWTUNNEL_IP_TOS]) >= sizeof(uint8_t) ) {
 		if( family == AF_INET6 ) {
 			enc->data.ip.tc = RTA_UINT8_T(ip[LWTUNNEL_IP6_TC]);

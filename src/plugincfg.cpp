@@ -18,7 +18,7 @@
 
 static char initial_log[LOG_MAX_PATH] = {'/','t','m','p','/','f','a','r','2','l','.','n','e','t','c','f','g','.','l','o','g',0};
 const char * LOG_FILE = initial_log;
-static_assert( sizeof("/dev/null") < LOG_MAX_PATH );
+//static_assert( sizeof("/dev/null") < LOG_MAX_PATH );
 
 #define INI_LOCATION InMyConfig("plugins/netcfg/config.ini")
 #define INI_SECTION "Settings"

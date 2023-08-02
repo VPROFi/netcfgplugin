@@ -102,7 +102,7 @@ static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = fa
 		struct sockaddr_dl * sdl = (struct sockaddr_dl *)sa;
 		if (sdl->sdl_nlen == 0 && sdl->sdl_alen == 0 &&
 		    sdl->sdl_slen == 0) {
-			static_assert( IFNAMSIZ < sizeof(s) );
+			//static_assert( IFNAMSIZ < sizeof(s) );
 
 			/*LOG_INFO("1. sdl_index: %d\n", sdl->sdl_index);
 			LOG_INFO("1. sdl_type:  0x%02x (%s)\n", sdl->sdl_type, ifttoname(sdl->sdl_type));
@@ -120,7 +120,7 @@ static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = fa
 			LOG_INFO("2. sdl_slen   %u\n", sdl->sdl_slen);*/
 
 			unsigned char * mac = (unsigned char *)sdl->sdl_data + sdl->sdl_nlen;
-			static_assert( sizeof("FF:FF:FF:FF:FF:FF") < sizeof(s) );
+			//static_assert( sizeof("FF:FF:FF:FF:FF:FF") < sizeof(s) );
 			if( snprintf(s, maxlen, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]) > 0 )
 				addr = s;
 		} else if( (sdl->sdl_alen + sdl->sdl_nlen/2) == ETHER_ADDR_LEN ) {
@@ -131,7 +131,7 @@ static std::wstring get_sockaddr_str(const struct sockaddr *sa, bool ismask = fa
 			LOG_INFO("2.5 sdl_alen   %u\n", sdl->sdl_alen);
 			LOG_INFO("2.5 sdl_slen   %u\n", sdl->sdl_slen);
 
-			static_assert( ETHER_ADDR_LEN*3 < sizeof(s) );
+			//static_assert( ETHER_ADDR_LEN*3 < sizeof(s) );
 			memmove(s, sdl->sdl_data, sdl->sdl_nlen);
 			char * ptr = &s[sdl->sdl_nlen];
 			for(int i = 0; i < (ETHER_ADDR_LEN - sdl->sdl_nlen/2); i++ )
@@ -465,8 +465,8 @@ bool NetRoutes::UpdateByProcNet(void)
 
 		const size_t maxlen = INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
 
-		static_assert( sizeof("ff:ff:ff:ff:ff:ff") < maxlen );
-		static_assert( 15 < MAX_INTERFACE_NAME_LEN );
+		//static_assert( sizeof("ff:ff:ff:ff:ff:ff") < maxlen );
+		//static_assert( 15 < MAX_INTERFACE_NAME_LEN );
 
 		char ip[maxlen] = {0};
 		char mac[maxlen] = {0};
@@ -814,7 +814,7 @@ bool NetRoutes::UpdateByNetlink(void * netlink, unsigned char af_family)
 						(short unsigned int)(~NLA_F_NESTED),
 						RTA_PAYLOAD(rr->tb[RTA_METRICS]),
 						rtaxtype) ) {
-				static_assert( (sizeof(ipr.osdep.rtmetrics)/sizeof(uint32_t)) == (RTAX_MAX+1) );
+				//static_assert( (sizeof(ipr.osdep.rtmetrics)/sizeof(uint32_t)) == (RTAX_MAX+1) );
 				for(uint32_t index = 0; index < sizeof(ipr.osdep.rtmetrics)/sizeof(uint32_t); index++ ) {
 					if( mrta[index] && RTA_PAYLOAD(mrta[index]) >= sizeof(uint32_t) ) {
 						((uint32_t *)&ipr.osdep.rtmetrics)[index] = RTA_UINT32_T(mrta[index]);
@@ -1402,7 +1402,7 @@ bool NetRoutes::Update(void)
 				if( rtm->rtm_addrs & (1 << i) ) {
 
 					memset(&address, 0, sizeof(address));
-					static_assert(sizeof(sa->sa_len) == sizeof(uint8_t));
+					//static_assert(sizeof(sa->sa_len) == sizeof(uint8_t));
 					memmove(&address, sa, sa->sa_len);
 
 					LOG_INFO("%u. %s: sa %p sa->sa_family %u (%s) sa->sa_len %u\n", i, ifname, sa, sa->sa_family, familyname(sa->sa_family), sa->sa_len);

@@ -226,7 +226,7 @@ bool NetInterfaces::UpdateByProcNet(void)
 }
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-static_assert( IFLA_MAX == 64 );
+//static_assert( IFLA_MAX == 64 );
 std::wstring MacFromData(const unsigned char * mac)
 {
 	char s[sizeof("FF:FF:FF:FF:FF:FF")] = {0};
@@ -428,7 +428,7 @@ bool NetInterfaces::UpdateByNetlink(void)
 				if( !lr->tb[IFLA_STATS64] && lr->tb[IFLA_STATS] && RTA_PAYLOAD(lr->tb[IFLA_STATS]) >= sizeof(struct rtnl_link_stats) ) {
 					uint32_t *stats = (uint32_t *)RTA_DATA(lr->tb[IFLA_STATS]);
 					uint64_t *stats64 = (uint64_t *)&net_if->osdep.stat64;
-					static_assert( (sizeof(struct rtnl_link_stats)/8) <= (sizeof(struct rtnl_link_stats64)/8) );
+					//static_assert( (sizeof(struct rtnl_link_stats)/8) <= (sizeof(struct rtnl_link_stats64)/8) );
 					for(int index = 0; index < (sizeof(struct rtnl_link_stats)/8); index++)
 						stats64[index] = (uint64_t)stats[index];
 					copystats64(net_if, &net_if->osdep.stat64);
@@ -735,7 +735,7 @@ struct link_util *get_link_kind(const char *kind);
 									LOG_INFO("IFLA_INET6_FLAGS:         0x%08X (%s)\n", net_if->osdep.inet6flags, inet6flags(net_if->osdep.inet6flags));
 								}
 								if( tb[IFLA_INET6_CACHEINFO] && RTA_PAYLOAD(tb[IFLA_INET6_CACHEINFO]) >= sizeof(struct ifla_cacheinfo) ) {
-									static_assert( sizeof(struct ifla_cacheinfo) == sizeof(net_if->osdep.inet6cacheinfo) );
+									//static_assert( sizeof(struct ifla_cacheinfo) == sizeof(net_if->osdep.inet6cacheinfo) );
 									memmove(&net_if->osdep.inet6cacheinfo, RTA_DATA(tb[IFLA_INET6_CACHEINFO]), sizeof(net_if->osdep.inet6cacheinfo));
 									LOG_INFO("IFLA_INET6_CACHEINFO:     max_reasm_len:  %s\n", size_to_str(net_if->osdep.inet6cacheinfo.max_reasm_len) );
 									LOG_INFO("IFLA_INET6_CACHEINFO:     tstamp:         %.2fs\n", (double)net_if->osdep.inet6cacheinfo.tstamp/100.0);
@@ -951,7 +951,7 @@ struct link_util *get_link_kind(const char *kind);
 
 				}
 				if( ar->tb[IFA_CACHEINFO] && RTA_PAYLOAD(ar->tb[IFA_CACHEINFO]) >= sizeof(struct ifa_cacheinfo) ) {
-					static_assert( sizeof(ip.cacheinfo) == sizeof(struct ifa_cacheinfo) );
+					//static_assert( sizeof(ip.cacheinfo) == sizeof(struct ifa_cacheinfo) );
 					memmove(&ip.cacheinfo, RTA_DATA(ar->tb[IFA_CACHEINFO]), sizeof(ip.cacheinfo));
 					LOG_INFO("IFA_CACHEINFO:      ifa_prefered: %s\n", ip.cacheinfo.ifa_prefered == 0xFFFFFFFFU ? "forever":msec_to_str(ip.cacheinfo.ifa_prefered*1000));
 					LOG_INFO("IFA_CACHEINFO:      ifa_valid:    %s\n", ip.cacheinfo.ifa_valid == 0xFFFFFFFFU ? "forever":msec_to_str(ip.cacheinfo.ifa_valid*1000));

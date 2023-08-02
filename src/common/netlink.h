@@ -207,7 +207,6 @@
 #undef IFLA_MAX
 #define IFLA_MAX 64
 
-//static_assert( IFLA_MAX >= 64, "unsupported if_link.h" );
 
 #ifndef IFA_PROTO
 #define IFA_PROTO 11

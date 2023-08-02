@@ -47,8 +47,6 @@ extern const char * LOG_FILE;
     #error "Environment not 32 or 64-bit."
 #endif
 
-static_assert( IFLA_MAX >= 64, "unsupported if_link.h" );
-
 typedef struct {
 	struct nlmsghdr nlm;
 	char * info;

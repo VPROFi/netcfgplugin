@@ -146,26 +146,66 @@
 
 #ifndef IFLA_MIN_MTU
 #define IFLA_MIN_MTU 50
+#endif
+
+#ifndef IFLA_MAX_MTU
 #define IFLA_MAX_MTU 51
+#endif
+
+#ifndef IFLA_PROP_LIST
 #define IFLA_PROP_LIST 52
+#endif
+
+#ifndef IFLA_ALT_IFNAME
 #define IFLA_ALT_IFNAME 53
 #endif
 
 #ifndef IFLA_PERM_ADDRESS
 #define IFLA_PERM_ADDRESS 54
+#endif
+
+#ifndef IFLA_PROTO_DOWN_REASON
 #define IFLA_PROTO_DOWN_REASON 55
+#endif
+
+#ifndef	IFLA_PARENT_DEV_NAME
 #define	IFLA_PARENT_DEV_NAME 56
+#endif
+
+#ifndef	IFLA_PARENT_DEV_BUS_NAME
 #define	IFLA_PARENT_DEV_BUS_NAME 57
+#endif
+
+#ifndef	IFLA_GRO_MAX_SIZE
 #define	IFLA_GRO_MAX_SIZE 58
+#endif
+
+#ifndef	IFLA_TSO_MAX_SIZE
 #define	IFLA_TSO_MAX_SIZE 59
+#endif
+
+#ifndef	IFLA_TSO_MAX_SEGS
 #define	IFLA_TSO_MAX_SEGS 60
+#endif
+
+#ifndef	IFLA_ALLMULTI
 #define	IFLA_ALLMULTI 61
+#endif
+
+#ifndef	IFLA_DEVLINK_PORT
 #define	IFLA_DEVLINK_PORT 62
+#endif
+
+#ifndef	IFLA_GSO_IPV4_MAX_SIZE
 #define	IFLA_GSO_IPV4_MAX_SIZE 63
+#endif
+
+#ifndef IFLA_GRO_IPV4_MAX_SIZE
 #define	IFLA_GRO_IPV4_MAX_SIZE 64
+#endif
+
 #undef IFLA_MAX
 #define IFLA_MAX 64
-#endif
 
 //static_assert( IFLA_MAX >= 64, "unsupported if_link.h" );
 

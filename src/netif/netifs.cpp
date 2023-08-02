@@ -429,7 +429,7 @@ bool NetInterfaces::UpdateByNetlink(void)
 					uint32_t *stats = (uint32_t *)RTA_DATA(lr->tb[IFLA_STATS]);
 					uint64_t *stats64 = (uint64_t *)&net_if->osdep.stat64;
 					//static_assert( (sizeof(struct rtnl_link_stats)/8) <= (sizeof(struct rtnl_link_stats64)/8) );
-					for(int index = 0; index < (sizeof(struct rtnl_link_stats)/8); index++)
+					for(size_t index = 0; index < (sizeof(struct rtnl_link_stats)/8); index++)
 						stats64[index] = (uint64_t)stats[index];
 					copystats64(net_if, &net_if->osdep.stat64);
 					LOG_INFO("--------------32-------------------\n");

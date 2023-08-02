@@ -43,6 +43,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
 # GCC 6+ has a warning for an ABI change due to a bug introduced in GCC 5:
 # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=77728. As we are building all of
 # drcachesim and not linking to other C++ code, we can just ignore it.

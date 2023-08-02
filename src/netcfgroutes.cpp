@@ -149,7 +149,7 @@ bool NetcfgRoutes::SelectActivePanel(void)
 		menuElements[0].Selected = 1;
 		index = NetCfgPlugin::psi.Menu(NetCfgPlugin::psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
 					 L"Select active panel:", 0, L"hrd", nullptr, nullptr, menuElements.get(), index);
-		if( index >= 0 && index < panels.size() ) {
+		if( index >= 0 && index < static_cast<int>(panels.size()) ) {
 			active = (uint32_t)index;
 			return true;
 		}

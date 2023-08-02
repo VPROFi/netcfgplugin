@@ -206,7 +206,7 @@ const char * IpRouteInfo::GetNextHopes(void) const
 		res = 0;
 		
 
-		if( item.valid.encap && (res = snprintf(ptr, size, " encap %s", GetEncap(item.enc))) < 0 || size < res )
+		if( item.valid.encap && ((res = snprintf(ptr, size, " encap %s", GetEncap(item.enc))) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -426,11 +426,12 @@ void RuleRouteInfo::ToRuleString(bool skipExtInfo)
 				rule += L" [unresolved]";
 			break;
 		case RTN_NAT:
-			if( !skipExtInfo )
+			if( !skipExtInfo ) {
 				if( valid.gateway )
 					rule += L" map-to "+ gateway;
 				else
 					rule += L" masquerade";
+			}
 			break;
 		default:
 			rule += L" " + towstr(fractionrule(action));
@@ -476,7 +477,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
 	char * ptr = buf.get();
-	size_t size = MAX_CMD_LEN+1;
+	int size = MAX_CMD_LEN+1;
 	int res = 0;
 	*ptr = 0;
 
@@ -502,7 +503,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 		size -= res;
 		res = 0;
 
-		if( valid.type && (res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res )
+		if( valid.type && ((res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -516,35 +517,35 @@ bool IpRouteInfo::CreateIpRoute(void)
 		size -= res;
 		res = 0;
 
-		if( valid.tos && osdep.tos && (res = snprintf(ptr, size, " tos %u", osdep.tos)) < 0 || size < res )
+		if( valid.tos && osdep.tos && ((res = snprintf(ptr, size, " tos %u", osdep.tos)) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.table && (res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res )
+		if( valid.table && ((res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.protocol && (res = snprintf(ptr, size, " proto %s", rtprotocoltype(osdep.protocol))) < 0 || size < res )
+		if( valid.protocol && ((res = snprintf(ptr, size, " proto %s", rtprotocoltype(osdep.protocol))) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.scope && (res = snprintf(ptr, size, " scope %s", rtscopetype(osdep.scope))) < 0 || size < res )
+		if( valid.scope && ((res = snprintf(ptr, size, " scope %s", rtscopetype(osdep.scope))) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.metric && (res = snprintf(ptr, size, " metric %u", osdep.metric)) < 0 || size < res )
+		if( valid.metric && ((res = snprintf(ptr, size, " metric %u", osdep.metric)) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -564,28 +565,28 @@ bool IpRouteInfo::CreateIpRoute(void)
 
 		} else {
 
-		if( valid.encap && (res = snprintf(ptr, size, " encap %s", GetEncap(osdep.enc))) < 0 || size < res )
+		if( valid.encap && ((res = snprintf(ptr, size, " encap %s", GetEncap(osdep.enc))) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.gateway && (res = snprintf(ptr, size, " via %s %S", ipfamilyname(sa_family), gateway.c_str())) < 0 || size < res )
+		if( valid.gateway && ((res = snprintf(ptr, size, " via %s %S", ipfamilyname(sa_family), gateway.c_str())) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+		if( valid.iface && ((res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.flags && (res = snprintf(ptr, size, "%s%s", flags & RTNH_F_ONLINK ? " onlink":"", flags & RTNH_F_PERVASIVE ? " pervasive":"")) < 0 || size < res )
+		if( valid.flags && ((res = snprintf(ptr, size, "%s%s", flags & RTNH_F_ONLINK ? " onlink":"", flags & RTNH_F_PERVASIVE ? " pervasive":"")) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -594,7 +595,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 
 		// TODO: OPTIONS FLAGS
 
-		if( valid.rtnexthop && (res = snprintf(ptr, size, "%s", GetNextHopes())) < 0 || size < res )
+		if( valid.rtnexthop && ((res = snprintf(ptr, size, "%s", GetNextHopes())) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -615,7 +616,7 @@ bool IpRouteInfo::DeleteIpRoute(void)
 
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
 	char * ptr = buf.get();
-	size_t size = MAX_CMD_LEN+1;
+	int size = MAX_CMD_LEN+1;
 	int res = 0;
 	*ptr = 0;
 
@@ -640,7 +641,7 @@ bool IpRouteInfo::DeleteIpRoute(void)
 		ptr += res;
 		size -= res;
 		res = 0;
-		if( valid.type && (res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res )
+		if( valid.type && ((res = snprintf(ptr, size, " %s", rttype(osdep.type))) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -652,7 +653,7 @@ bool IpRouteInfo::DeleteIpRoute(void)
 		ptr += res;
 		size -= res;
 		res = 0;
-		if( valid.table && (res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res )
+		if( valid.table && ((res = snprintf(ptr, size, " table %u", osdep.table)) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -676,7 +677,6 @@ bool IpRouteInfo::DeleteIpRoute(void)
 bool RuleRouteInfo::DeleteRule(void)
 {
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
-	char * ptr = buf.get();
 	const size_t size = MAX_CMD_LEN+1;
 	rule.clear();
 	ToRuleString(true);
@@ -700,7 +700,6 @@ bool RuleRouteInfo::DeleteRule(void)
 bool RuleRouteInfo::CreateRule(void)
 {
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
-	char * ptr = buf.get();
 	const size_t size = MAX_CMD_LEN+1;
 	rule.clear();
 	ToRuleString(true);
@@ -737,7 +736,7 @@ bool ArpRouteInfo::Create(void)
 {
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
 	char * ptr = buf.get();
-	size_t size = MAX_CMD_LEN+1;
+	int size = MAX_CMD_LEN+1;
 	int res = 0;
 	*ptr = 0;
 
@@ -751,24 +750,24 @@ bool ArpRouteInfo::Create(void)
 
 
 		if( valid.flags && flags & NTF_PROXY ) {
-			if( valid.ip && (res = snprintf(ptr, size, " proxy %S", ip.c_str())) < 0 || size < res )
+			if( valid.ip && ((res = snprintf(ptr, size, " proxy %S", ip.c_str())) < 0 || size < res) )
 				break;
 		} else {
-			if( valid.ip && (res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res )
+			if( valid.ip && ((res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res) )
 				break;
 
 			ptr += res;
 			size -= res;
 			res = 0;
 
-			if( valid.mac && (res = snprintf(ptr, size, " lladdr %S", mac.c_str())) < 0 || size < res )
+			if( valid.mac && ((res = snprintf(ptr, size, " lladdr %S", mac.c_str())) < 0 || size < res) )
 				break;
 
 			ptr += res;
 			size -= res;
 			res = 0;
 
-			if( valid.state && (res = snprintf(ptr, size, " nud %s", ndmsgstate(state))) < 0 || size < res )
+			if( valid.state && ((res = snprintf(ptr, size, " nud %s", ndmsgstate(state))) < 0 || size < res) )
 				break;
 
 		}
@@ -777,7 +776,7 @@ bool ArpRouteInfo::Create(void)
 		size -= res;
 		res = 0;
 
-		if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+		if( valid.iface && ((res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res) )
 			break;
 
 		ptr += res;
@@ -785,35 +784,35 @@ bool ArpRouteInfo::Create(void)
 		res = 0;
 
 
-		if( valid.flags && flags & NTF_ROUTER && (res = snprintf(ptr, size, " router")) < 0 || size < res )
+		if( valid.flags && flags & NTF_ROUTER && ((res = snprintf(ptr, size, " router")) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.flags && flags & NTF_USE && (res = snprintf(ptr, size, " use")) < 0 || size < res )
+		if( valid.flags && flags & NTF_USE && ((res = snprintf(ptr, size, " use")) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.flags_ext && flags_ext & NTF_EXT_MANAGED && (res = snprintf(ptr, size, " managed")) < 0 || size < res )
+		if( valid.flags_ext && flags_ext & NTF_EXT_MANAGED && ((res = snprintf(ptr, size, " managed")) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.flags && flags & NTF_EXT_LEARNED && (res = snprintf(ptr, size, " extern_learn")) < 0 || size < res )
+		if( valid.flags && flags & NTF_EXT_LEARNED && ((res = snprintf(ptr, size, " extern_learn")) < 0 || size < res) )
 			break;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( valid.protocol && (res = snprintf(ptr, size, " protocol %s", rtprotocoltype(protocol))) < 0 || size < res )
+		if( valid.protocol && ((res = snprintf(ptr, size, " protocol %s", rtprotocoltype(protocol))) < 0 || size < res) )
 			break;
 
 		return RootExec(buf.get()) == 0;
@@ -827,7 +826,7 @@ bool ArpRouteInfo::Delete(void)
 {
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
 	char * ptr = buf.get();
-	size_t size = MAX_CMD_LEN+1;
+	int size = MAX_CMD_LEN+1;
 	int res = 0;
 	*ptr = 0;
 
@@ -838,14 +837,14 @@ bool ArpRouteInfo::Delete(void)
 	size -= res;
 	res = 0;
 
-	if( valid.ip && (res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res )
+	if( valid.ip && ((res = snprintf(ptr, size, " %S", ip.c_str())) < 0 || size < res) )
 		return false;
 
 	ptr += res;
 	size -= res;
 	res = 0;
 
-	if( valid.iface && (res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res )
+	if( valid.iface && ((res = snprintf(ptr, size, " dev %S", iface.c_str())) < 0 || size < res) )
 		return false;
 
 	return RootExec(buf.get()) == 0;
@@ -856,7 +855,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 {
 	auto buf = std::make_unique<char[]>(MAX_CMD_LEN+1);
 	char * ptr = buf.get();
-	size_t size = MAX_CMD_LEN+1;
+	int size = MAX_CMD_LEN+1;
 	int res = 0;
 	*ptr = 0;
 
@@ -901,7 +900,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 	size -= res;
 	res = 0;
 
-	if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s%s%s%s%s%s",
+	if( valid.flags && ((res = snprintf(ptr, size, "%s%s%s%s%s%s%s%s",
 		flags & RTF_BLACKHOLE ? " -blackhole":"",
 		flags & RTF_REJECT ? " -reject":"",
 		flags & RTF_STATIC ? " -static":" -nostatic",
@@ -909,7 +908,7 @@ bool IpRouteInfo::CreateIpRoute(void)
 		flags & RTF_PROTO1 ? " -proto1":"",
 		flags & RTF_PROTO2 ? " -proto2":"",
 		flags & RTF_XRESOLVE ? " -xresolve":"",
-		flags & RTF_LLINFO ? " -llinfo":"")) < 0) || size < res )
+		flags & RTF_LLINFO ? " -llinfo":"")) < 0 || size < res) )
 		return false;
 
 	ptr += res;
@@ -996,10 +995,10 @@ bool ArpRouteInfo::Create(void)
 		size -= res;
 		res = 0;
 
-		if( (valid.flags && (res = snprintf(ptr, size, "%s%s%s",
+		if( valid.flags && ((res = snprintf(ptr, size, "%s%s%s",
 			flags & RTF_BLACKHOLE ? " blackhole":"",
 			flags & RTF_REJECT ? " reject":"",
-			flags & RTF_ANNOUNCE ? " pub":"")) < 0) || size < res )
+			flags & RTF_ANNOUNCE ? " pub":"")) < 0 || size < res) )
 			return false;
 
 		ptr += res;
@@ -1017,22 +1016,22 @@ bool ArpRouteInfo::Create(void)
 		size -= res;
 		res = 0;
 
-		if( (valid.iface && (res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0) || size < res )
+		if( valid.iface && ((res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0 || size < res) )
 			return false;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( (valid.mac && (res = snprintf(ptr, size, " %S", mac.c_str())) < 0) || size < res )
+		if( valid.mac && ((res = snprintf(ptr, size, " %S", mac.c_str())) < 0 || size < res) )
 			return false;
 
 		ptr += res;
 		size -= res;
 		res = 0;
 
-		if( (valid.flags && (res = snprintf(ptr, size, "%s",
-			flags & RTF_ANNOUNCE ? " proxy":"")) < 0) || size < res )
+		if( valid.flags && ((res = snprintf(ptr, size, "%s",
+			flags & RTF_ANNOUNCE ? " proxy":"")) < 0 || size < res) )
 			return false;
 		break;
 	default:
@@ -1071,7 +1070,7 @@ bool ArpRouteInfo::Delete(void)
 		size -= res;
 		res = 0;
 
-		if( (valid.iface && (res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0) || size < res )
+		if( valid.iface && ((res = snprintf(ptr, size, "%%%S", iface.c_str())) < 0 || size < res) )
 			return false;
 
 		break;

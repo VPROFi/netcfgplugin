@@ -76,7 +76,7 @@ HANDLE NetCfgPlugin::OpenPlugin(int openFrom, INT_PTR item)
 	    (openFrom == OPEN_PLUGINSMENU && !cfg->interfacesAddToPluginsMenu && cfg->routesAddToPluginsMenu))
 		item = PanelNetworkRoutes;
 
-	if( item < panel.size() )
+	if( static_cast<size_t>(item) < panel.size() )
 		return static_cast<HANDLE>(panel[item].get());
 	return 0;
 }

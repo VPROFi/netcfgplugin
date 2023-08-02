@@ -97,7 +97,7 @@ uint8_t NetFarPanel::SelectFamily(HANDLE hDlg, uint32_t setIndex)
 		AF_UNSPEC
 	};
 
-	if( index >= 0 && index < ARRAYSIZE(family) )
+	if( index >= 0 && index < static_cast<int>(ARRAYSIZE(family)) )
 		return family[index];
 
 	return AF_UNSPEC;
@@ -152,7 +152,7 @@ uint8_t NetFarPanel::SelectProto(HANDLE hDlg, uint32_t setIndex, uint8_t old_pro
 				RTPROT_RIP,	
 				RTPROT_EIGRP };
 			auto num = SelectNum(hDlg, &menuElements[0], ARRAYSIZE(menuElements), L"Proto:", setIndex);
-			if( num >= 0 && num < ARRAYSIZE(type) )
+			if( num >= 0 && num < static_cast<int>(ARRAYSIZE(type)) )
 				return type[num];
 			if( num == ARRAYSIZE(type) )
 				return (uint8_t)GetNumberItem(hDlg, setIndex);

@@ -57,7 +57,7 @@ bool NetcfgArpRoute::DeleteArp(void)
 
 		static const DlgConstructorItem arp_dlg = {DI_TEXT, true, 5, 0, 0, {0}};
 
-		for( size_t i = 0; i < pi.SelectedItemsNumber; i++ ) {
+		for( int i = 0; i < pi.SelectedItemsNumber; i++ ) {
 			auto ppi = GetSelectedPanelItem(i);
 			if( ppi && ppi->Flags & PPIF_USERDATA ) {
 
@@ -94,7 +94,7 @@ bool NetcfgArpRoute::DeleteArp(void)
 
 		FarDialog dlg(&fdc);
 
-		if( dlg.Run() != offSufix + WinSuffixOkIndex )
+		if( dlg.Run() != static_cast<int>(offSufix) + WinSuffixOkIndex )
 			break;
 
 		for( auto & r : delarps )
@@ -226,7 +226,7 @@ LONG_PTR WINAPI EditArpDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR par
 				NUD_FAILED,
 				NUD_NONE
 			};
-			if( state < 0 || state >= ARRAYSIZE(def_state) )
+			if( state < 0 || state >= static_cast<int>(ARRAYSIZE(def_state)) )
 				return true;
 			rtCfg->new_a.state = def_state[state];
 			rtCfg->new_a.valid.state = 1;

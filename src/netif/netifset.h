@@ -247,36 +247,36 @@ extern int RootExec(const char * cmd);
 //Если вы хотите использовать L2TP для VPN с удаленным доступом или иным образом нуждаетесь в динамически создаваемых псевдопроводах,
 //вам нужен демон пользовательского пространства для обработки этого.
 //TODO: Создаем туннель L2TPv3 через UDP
-//ip l2tp add tunnel \
-//tunnel_id ${local tunnel numeric identifier} \
-//peer_tunnel_id ${remote tunnel numeric identifier} \
-//udp_sport ${source port} \
-//udp_dport ${destination port} \
-//encap udp \
-//local ${local endpoint address} \
+//ip l2tp add tunnel
+//tunnel_id ${local tunnel numeric identifier}
+//peer_tunnel_id ${remote tunnel numeric identifier}
+//udp_sport ${source port}
+//udp_dport ${destination port}
+//encap udp
+//local ${local endpoint address}
 //remote ${remote endpoint address}
 //Примеры:
-//ip l2tp add tunnel \
-//tunnel_id 1 \
-//peer_tunnel_id 1 \
-//udp_sport 5000 \
-//udp_dport 5000 \ 
-//encap udp \
-//local 192.0.2.1 \ 
+//ip l2tp add tunnel
+//tunnel_id 1
+//peer_tunnel_id 1
+//udp_sport 5000
+//udp_dport 5000 
+//encap udp
+//local 192.0.2.1
 //remote 203.0.113.2
 //Примечание. Идентификаторы туннеля и другие параметры на обеих конечных точках должны совпадать.
 //TODO: Создаем туннель L2TPv3 через IP
-//ip l2tp add tunnel \
-//tunnel_id ${local tunnel numeric identifier} \
-//peer_tunnel_id {remote tunnel numeric identifier } \
-//encap ip \
-//local 192.0.2.1 \
+//ip l2tp add tunnel
+//tunnel_id ${local tunnel numeric identifier}
+//peer_tunnel_id {remote tunnel numeric identifier }
+//encap ip
+//local 192.0.2.1
 //remote 203.0.113.2
 //Инкапсуляция кадров L2TPv3 в IP, а не в UDP, создает меньшие накладные расходы,
 //но может вызвать проблемы для конечных точек за NAT.
 //TODO: Создать сессию L2TPv3
-//ip l2tp add session tunnel_id ${local tunnel identifier} \
-//session_id ${local session numeric identifier} \
+//ip l2tp add session tunnel_id ${local tunnel identifier}
+//session_id ${local session numeric identifier}
 //peer_session_id ${remote session numeric identifier}
 //Примеры:
 //ip l2tp add session tunnel_id 1 session_id 10 peer_session_id 10
@@ -298,7 +298,7 @@ extern int RootExec(const char * cmd);
 //ip l2tp show tunnel tunnel_id 12
 //TODO: Просмотр информации о сеансе L2TPv3
 //ip l2tp show session
-//ip l2tp show session session_id ${session identifier} \
+//ip l2tp show session session_id ${session identifier}
 //tunnel_id ${tunnel identifier}
 //Примеры:
 //ip l2tp show session session_id 1 tunnel_id 12
@@ -312,24 +312,24 @@ extern int RootExec(const char * cmd);
 //обычно PIM-SM, чтобы заставить его работать в маршрутизируемых сетях, но если вы его настроите, вам не нужно создавать все соединения VXLAN. рукой.
 //Базовым протоколом инкапсуляции для VXLAN является UDP.
 //TODO: Создать одноадресную ссылку VXLAN
-//ip link add name ${interface name} type vxlan \ 
-//   id <0-16777215> \ 
-//   dev ${source interface}\ 
-//   remote ${remote endpoint address} \ 
-//   local ${local endpoint address} \ 
+//ip link add name ${interface name} type vxlan 
+//   id <0-16777215> 
+//   dev ${source interface}
+//   remote ${remote endpoint address} 
+//   local ${local endpoint address} 
 //   dstport ${VXLAN destination port}
 //Пример:
-//ip link add name vxlan0 type vxlan \ 
+//ip link add name vxlan0 type vxlan 
 //   id 42 dev eth0 remote 203.0.113.6 local 192.0.2.1 dstport 4789
 //Примечание. id параметр — сетевой идентификатор VXLAN (VNI).
 //TODO: Создать многоадресную ссылку VXLAN
-//ip link add name ${interface name} type vxlan \ 
-//   id <0-16777215> \ 
-//   dev ${source interface} \ 
-//   group ${multicast address} \ 
+//ip link add name ${interface name} type vxlan 
+//   id <0-16777215> 
+//   dev ${source interface} 
+//   group ${multicast address} 
 //   dstport ${VXLAN destination port}
 //Пример:
-//ip link add name vxlan0 type vxlan \ 
+//ip link add name vxlan0 type vxlan 
 //   id 42 dev eth0 group 239.0.0.1 dstport 4789
 //После этого нужно поднять линк и либо соединить его с другим интерфейсом, либо присвоить ему адрес.
 

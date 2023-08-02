@@ -79,7 +79,7 @@ bool NetcfgIpRoute::DeleteIpRoute(void)
 
 		static const DlgConstructorItem route = {DI_TEXT, true, 5, 0, 0, {0}};
 
-		for( size_t i = 0; i < pi.SelectedItemsNumber; i++ ) {
+		for( int i = 0; i < pi.SelectedItemsNumber; i++ ) {
 			auto ppi = GetSelectedPanelItem(i);
 			if( ppi && !(ppi->FindData.dwFileAttributes & FILE_ATTRIBUTE_OFFLINE) && ppi->Flags & PPIF_USERDATA ) {
 
@@ -121,7 +121,7 @@ bool NetcfgIpRoute::DeleteIpRoute(void)
 
 		FarDialog dlg(&fdc);
 
-		if( dlg.Run() != offSufix + WinSuffixOkIndex )
+		if( dlg.Run() != static_cast<int>(offSufix) + WinSuffixOkIndex )
 			break;
 
 		for( auto & rt : delroutes )
@@ -364,9 +364,9 @@ bool NetcfgIpRoute::SelectEncap(HANDLE hDlg, Encap & enc)
 				flags += L")";
 			}
 			fdc.SetText(WinEditIpEncapIpFlagsTextIndex, flags.c_str(), true);
-			fdc.SetSelected(WinEditIpEncapIpCsumCheckBoxIndex, enc.data.ip.flags & TUNNEL_CSUM != 0);
-			fdc.SetSelected(WinEditIpEncapIpKeyCheckBoxIndex, enc.data.ip.flags & TUNNEL_KEY != 0);
-			fdc.SetSelected(WinEditIpEncapIpSeqCheckBoxIndex, enc.data.ip.flags & TUNNEL_SEQ != 0);
+			fdc.SetSelected(WinEditIpEncapIpCsumCheckBoxIndex, (enc.data.ip.flags & TUNNEL_CSUM) != 0);
+			fdc.SetSelected(WinEditIpEncapIpKeyCheckBoxIndex, (enc.data.ip.flags & TUNNEL_KEY) != 0);
+			fdc.SetSelected(WinEditIpEncapIpSeqCheckBoxIndex, (enc.data.ip.flags & TUNNEL_SEQ) != 0);
 
 			if( enc.data.ip.flags & TUNNEL_GENEVE_OPT && enc.data.ip.valid.geneve ) {
 				fdc.OrFlags(WinEditIpEncapIpOptsVxlanEditIndex, DIF_HIDDEN);
@@ -527,18 +527,6 @@ bool NetcfgIpRoute::SelectEncap(HANDLE hDlg, Encap & enc)
 
 const int EDIT_IP_DIALOG_WIDTH = 84;
 
-static bool ShowHideElements(HANDLE hDlg, uint32_t chk, uint32_t chkStore, uint32_t begin, uint32_t end)
-{
-	bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chkStore, 0));
-	bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chk, 0));
-	if( prev != enabled ) {
-		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, chkStore, enabled);
-		ChangeDialogItemsView(hDlg, begin, end, false, !enabled);
-	}
-	return enabled;
-}
-
-
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 
 enum {
@@ -611,8 +599,9 @@ LONG_PTR WINAPI EditIpRouteDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR
 					base+WinEditIpNextHopeHeaderTextIndex,
 					base+WinEditIpNextHopeWeightEditIndex) ) {
 
-				if( !prev )
-					NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, base+WinEditIpNextHopeEncapCheckBoxStoreIndex, true);
+					if( !prev ) {
+						NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, base+WinEditIpNextHopeEncapCheckBoxStoreIndex, true);
+					}
 					ShowHideElements(hDlg,
 						base+WinEditIpNextHopeEncapCheckBoxIndex,
 						base+WinEditIpNextHopeEncapCheckBoxStoreIndex,
@@ -869,13 +858,11 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	if( new_rt.valid.flags && new_rt.flags & RTNH_F_ONLINK )
 		fdc.SetSelected(WinEditIpOnlinkCheckBoxIndex, true);
 
-	auto offNextHope = fdc.GetNumberOfItems();
-
 	for( auto & item: new_rt.osdep.nhs ) {
 		auto off = fdc.GetNumberOfItems();
 		fdc.AppendItems(&nexthop[0]);
 		fdc.SetSelected(off+WinEditIpNextHopeNextHopeCheckBoxIndex, true);
-		fdc.SetSelected(off+WinEditIpNextHopeOnlinkCheckBoxIndex, item.flags & RTNH_F_ONLINK != 0);
+		fdc.SetSelected(off+WinEditIpNextHopeOnlinkCheckBoxIndex, (item.flags & RTNH_F_ONLINK) != 0);
 		fdc.SetText(off+WinEditIpNextHopeFamilyButtonIndex, item.valid.rtvia ? towstr(ipfamilyname(item.rtvia_family)).c_str():0, true);
 		fdc.SetText(off+WinEditIpNextHopeViaEditIndex, item.valid.rtvia ? item.rtvia_addr.c_str():item.gateway.c_str());
 		auto it = ifs.find(item.ifindex);
@@ -900,6 +887,8 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 	fdc.SetDefaultButton(offSuffix + WinSuffixOkIndex);
 	fdc.SetFocus(offSuffix + WinSuffixOkIndex);
 
+	fdc.SetHelpTopic(L"RoutePanel");
+
 	FarDialog dlg(&fdc, EditIpRouteDialogProc, (LONG_PTR)this);
 
 	if( (dlg.Run() - offSuffix) == WinSuffixOkIndex ) {
@@ -913,7 +902,6 @@ bool NetcfgIpRoute::FillNewIpRoute(void)
 		for( auto & item : chlst ) {
 			if( item.itemNum >= WinEditIpPrefixMaxIndex ) {
 				uint32_t rindex = (item.itemNum - WinEditIpPrefixMaxIndex)/WinEditIpNextHopeMaxIndex;
-				uint32_t base = rindex*WinEditIpNextHopeMaxIndex+WinEditIpPrefixMaxIndex;
 				uint32_t iindex = (item.itemNum - WinEditIpPrefixMaxIndex)%WinEditIpNextHopeMaxIndex;
 
 				if( rindex == new_rt.osdep.nhs.size() )
@@ -1334,7 +1322,10 @@ bool NetcfgIpRoute::CreateIpRoute(void)
 
 int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState, bool & change)
 {
-	LOG_INFO("NetcfgIpRoute::ProcessKey(key=0x%08X VK_F4 = 0x%08X, controlState = 0x%08X)\n", key, VK_F4, controlState);
+	if( controlState == 0 && key == VK_F1 ) {
+		NetCfgPlugin::psi.ShowHelp(NetCfgPlugin::psi.ModuleName, L"RoutePanel", FHELP_USECONTENTS|FHELP_NOSHOWERROR);
+		return TRUE;
+	}
 
 	#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if( controlState == 0 && key == VK_F3 ) {

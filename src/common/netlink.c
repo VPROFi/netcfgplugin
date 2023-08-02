@@ -1272,7 +1272,6 @@ static void genevetostring(uint32_t total_geneves, Geneve * gen, char * buffer, 
 static int FillIp(uint8_t family, Encap * enc, struct rtattr * rta)
 {
 	struct rtattr * ip[LWTUNNEL_IP_MAX+1];
-	char s[MAX_INETADR_LEN+1] = {0};
 	uint32_t addrlen = family == AF_INET ? sizeof(uint32_t):sizeof(struct in6_addr);
 
 	//static_assert( LWTUNNEL_IP_MAX == LWTUNNEL_IP6_MAX, "unsupported LWTUNNEL_IP6_MAX" );
@@ -1468,12 +1467,12 @@ int FillEncap(Encap * enc, struct rtattr * rta)
 	case LWTUNNEL_ENCAP_MPLS:
 		{
 		struct rtattr * mpls[MPLS_IPTUNNEL_MAX+1];
-		if( res = FillAttr((struct rtattr*)RTA_DATA(rta),
+		if( (res = FillAttr((struct rtattr*)RTA_DATA(rta),
 			mpls,
 			MPLS_IPTUNNEL_MAX,
 			(short unsigned int)(~NLA_F_NESTED),
 			RTA_PAYLOAD(rta),
-			mplsiptunneltype) ) {
+			mplsiptunneltype)) ) {
 			if( mpls[MPLS_IPTUNNEL_DST] && RTA_PAYLOAD(mpls[MPLS_IPTUNNEL_DST]) >= sizeof(uint32_t) ) {
 				mpls_ntop((const struct mpls_label *)RTA_DATA(mpls[MPLS_IPTUNNEL_DST]), enc->data.mpls.dst, sizeof(enc->data.mpls.dst)-1);
 				enc->data.mpls.valid.dst = 1;

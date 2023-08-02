@@ -95,6 +95,7 @@ class FarDlgConstructor {
 };
 
 void ChangeDialogItemsView(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast, bool hide, bool disable);
+bool ShowHideElements(HANDLE hDlg, uint32_t chk, uint32_t chkStore, uint32_t begin, uint32_t end);
 void HideDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);
 void UnhideDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);
 void DisableDialogItems(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast);

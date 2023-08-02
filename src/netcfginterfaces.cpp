@@ -437,6 +437,8 @@ bool NetcfgInterfaces::EditInterface(NetInterface * net_if)
 	fdc.SetFocus(WinIfNameEditIndex);
 	fdc.SetDefaultButton(offSuffix+WinFooterOkIndex);
 
+	fdc.SetHelpTopic(L"InterfacePanel");
+
 	FarDialog dlg(&fdc, SettingInterfaceDialogProc, (LONG_PTR)this);
 	unsigned int result = (unsigned int)dlg.Run();
 
@@ -676,6 +678,9 @@ int NetcfgInterfaces::ProcessKey(HANDLE hPlugin,int key,unsigned int controlStat
 {
 	if( controlState == 0 ) {
 		switch( key ) {
+		case VK_F1:
+			NetCfgPlugin::psi.ShowHelp(NetCfgPlugin::psi.ModuleName, L"InterfacePanel", FHELP_USECONTENTS|FHELP_NOSHOWERROR);
+			return TRUE;
 		case VK_F2:
 			change = true;
 			redraw = true;

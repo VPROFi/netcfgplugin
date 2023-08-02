@@ -59,7 +59,7 @@ bool NetcfgIpRule::DeleteRule(void)
 
 		static const DlgConstructorItem rule_dlg = {DI_TEXT, true, 5, 0, 0, {0}};
 
-		for( size_t i = 0; i < pi.SelectedItemsNumber; i++ ) {
+		for( int i = 0; i < pi.SelectedItemsNumber; i++ ) {
 			auto ppi = GetSelectedPanelItem(i);
 			if( ppi && ppi->Flags & PPIF_USERDATA ) {
 
@@ -94,7 +94,7 @@ bool NetcfgIpRule::DeleteRule(void)
 
 		FarDialog dlg(&fdc);
 
-		if( dlg.Run() != offSufix + WinSuffixOkIndex )
+		if( dlg.Run() != static_cast<int>(offSufix) + WinSuffixOkIndex )
 			break;
 
 		for( auto & r : delrules )
@@ -258,7 +258,7 @@ LONG_PTR WINAPI EditRuleDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR pa
 			rtCfg->new_r.valid.ip_protocol = 1;
 			if( num == 0 )
 				rtCfg->new_r.valid.ip_protocol = 0;
-			else if( num >= 0 && num < ARRAYSIZE(proto) )
+			else if( num >= 0 && num < static_cast<int>(ARRAYSIZE(proto)) )
 				rtCfg->new_r.ip_protocol = proto[num];
 			else
 				rtCfg->new_r.ip_protocol = (uint8_t)GetNumberItem(hDlg, param1);

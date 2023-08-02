@@ -277,6 +277,12 @@ const char * GetRtmFlags(uint32_t rtm_flags)
 	return buf;
 }
 
+static std::string tostr(const wchar_t * name)
+{
+	std::wstring _s(name);
+	return std::string(_s.begin(), _s.end());
+}
+
 #endif
 
 // towstr can use only for ASCII symbols
@@ -284,12 +290,6 @@ static std::wstring towstr(const char * name)
 {
 	std::string _s(name);
 	return std::wstring(_s.begin(), _s.end());
-}
-
-static std::string tostr(const wchar_t * name)
-{
-	std::wstring _s(name);
-	return std::string(_s.begin(), _s.end());
 }
 
 static std::wstring destIpandMask(uint8_t family, void * adr, uint8_t maskbits)
@@ -570,7 +570,7 @@ bool NetRoutes::UpdateNeigbours(const NeighborRecord * nb)
 		ari.valid.state = 1;
 		ari.valid.type = 1;
 		ari.valid.flags = 1;
-		ari.valid.ifnameIndex = (ari.ifnameIndex != -1);
+		ari.valid.ifnameIndex = (ari.ifnameIndex != (uint32_t)-1);
 
 		uint32_t addrlen = 0;
 		uint32_t family = nb->ndm->ndm_family;
@@ -858,7 +858,7 @@ bool NetRoutes::UpdateByNetlink(void * netlink, unsigned char af_family)
 
 			ipr.valid.rtnexthop = 1;
 
-			while( len >= sizeof(*nh) ) {
+			while( len >= static_cast<int>(sizeof(*nh)) ) {
 				LOG_INFO("RTA_MULTIPATH: rtnh_len     %d\n", nh->rtnh_len);
 				LOG_INFO("RTA_MULTIPATH: rtnh_flags   0x%02X (%s)\n", nh->rtnh_flags, rtnhflagsname(nh->rtnh_flags));
 				LOG_INFO("RTA_MULTIPATH: rtnh_hops    %d\n", nh->rtnh_hops);
@@ -1003,8 +1003,6 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 
 	if( r )
 	while( r->frh ) {
-
-		char ifname[MAX_INTERFACE_NAME_LEN] = {0};
 
 		LOG_INFO("---------------- RuleRecord ---------------------\n");
 		LOG_INFO("nlh.nlmsg_type: %d (%s)\n", r->nlm.nlmsg_type, nlmsgtype(r->nlm.nlmsg_type));
@@ -1158,12 +1156,12 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 
 		if( r->tb[FRA_SUPPRESS_PREFIXLEN] && RTA_PAYLOAD(r->tb[FRA_SUPPRESS_PREFIXLEN]) >= sizeof(uint32_t) ) {
 			rri.suppress_prefixlength = RTA_UINT32_T(r->tb[FRA_SUPPRESS_PREFIXLEN]);
-			rri.valid.suppress_prefixlength = (rri.suppress_prefixlength != -1);
+			rri.valid.suppress_prefixlength = (rri.suppress_prefixlength != (uint32_t)-1);
 			LOG_INFO("FRA_SUPPRESS_PREFIXLEN: %d\n", rri.suppress_prefixlength);
 		}
 		if( r->tb[FRA_SUPPRESS_IFGROUP] && RTA_PAYLOAD(r->tb[FRA_SUPPRESS_IFGROUP]) >= sizeof(uint32_t) ) {
 			rri.suppress_ifgroup = RTA_UINT32_T(r->tb[FRA_SUPPRESS_IFGROUP]);
-			rri.valid.suppress_ifgroup = (rri.suppress_ifgroup != -1);
+			rri.valid.suppress_ifgroup = (rri.suppress_ifgroup != (uint32_t)-1);
 			LOG_INFO("FRA_SUPPRESS_IFGROUP:   %d\n", rri.suppress_ifgroup);
 		}
 
@@ -1226,7 +1224,6 @@ static const struct nla_policy rtm_ipv6_policy[RTA_MAX+1] = {
 		return false;
 
 	while( lr->ifm ) {
-		char ifname[MAX_INTERFACE_NAME_LEN] = {0};
 		LOG_INFO("-------------------------------------\n");
 		LOG_INFO("rtm_family:   %u (%s)\n", lr->ifm->ifi_family, familyname(lr->ifm->ifi_family));
 		LOG_INFO("ifi_type:     %u\n", lr->ifm->ifi_type); // ARPHRD_

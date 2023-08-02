@@ -419,7 +419,7 @@ HANDLE FarDialog::GetDlg(void)
 void ChangeDialogItemsView(HANDLE hDlg, unsigned int itemFirst, unsigned int itemLast, bool hide, bool disable)
 {
 	assert( itemFirst <= itemLast );
-	for(int i = itemFirst; i <= itemLast; i++ ) {
+	for(unsigned int i = itemFirst; i <= itemLast; i++ ) {
 		struct FarDialogItem *dlg = (FarDialogItem *)malloc(NetCfgPlugin::psi.SendDlgMessage(hDlg,DM_GETDLGITEM,i,0));
 		if( dlg ) {
 			NetCfgPlugin::psi.SendDlgMessage(hDlg,DM_GETDLGITEM,i,(LONG_PTR)dlg);
@@ -481,4 +481,15 @@ std::wstring GetText(HANDLE hDlg, unsigned int itemNum)
 		text = buf.get();
 	}
 	return text;
+}
+
+bool ShowHideElements(HANDLE hDlg, uint32_t chk, uint32_t chkStore, uint32_t begin, uint32_t end)
+{
+	bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chkStore, 0));
+	bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, chk, 0));
+	if( prev != enabled ) {
+		NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, chkStore, enabled);
+		ChangeDialogItemsView(hDlg, begin, end, false, !enabled);
+	}
+	return enabled;
 }

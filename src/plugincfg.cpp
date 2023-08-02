@@ -232,7 +232,7 @@ void PluginCfg::FillPanelData(struct PanelData * data, PanelIndex index)
 
 	auto & cfg = def[index];
 	auto & nmodes = data->panelModesArray;
-	for( int i =0; i < ARRAYSIZE(nmodes); i++ ) {
+	for( size_t i =0; i < ARRAYSIZE(nmodes); i++ ) {
 		nmodes[i].FullScreen = FALSE;
 		nmodes[i].DetailedStatus = 0;
 		nmodes[i].AlignExtensions = 0;
@@ -470,36 +470,23 @@ enum {
 
 LONG_PTR WINAPI CfgDialogProc(HANDLE hDlg, int msg, int param1, LONG_PTR param2)
 {
-	static PluginCfg * cfg = 0;
-
-	switch( msg ) {
-	case DN_INITDIALOG:
-		cfg = (PluginCfg *)param2;
-		break;
-	case DM_CLOSE:
-		cfg = 0;
-		break;
-	case DN_DRAWDLGITEM:
+	if( msg == DN_DRAWDLGITEM ) {
 		if( param1 == WinCfgEanbleLogIndex ) {
-			bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinCfgEanbleLogStoreIndex, 0));
-			bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinCfgEanbleLogIndex, 0));
-			if( prev != enabled ) {
-				NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, WinCfgEanbleLogStoreIndex, enabled);
-				ChangeDialogItemsView(hDlg, WinCfgEanbleLogEditIndex, WinCfgEanbleLogEditIndex, false, !enabled);
-			}
+			ShowHideElements(hDlg,
+				WinCfgEanbleLogIndex,
+				WinCfgEanbleLogStoreIndex,
+				WinCfgEanbleLogEditIndex,
+				WinCfgEanbleLogEditIndex);
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		} else if( param1 == WinCfgMcInetIndex ) {
-			bool prev = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinCfgConfigSaveSettingsCheckboxStoreIndex, 0));
-			bool enabled = bool(NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_GETCHECK, WinCfgConfigSaveSettingsCheckboxIndex, 0));
-			if( prev != enabled ) {
-				NetCfgPlugin::psi.SendDlgMessage(hDlg, DM_SETCHECK, WinCfgConfigSaveSettingsCheckboxStoreIndex, enabled);
-				ChangeDialogItemsView(hDlg, WinCfgMcInetIndex, WinCfgMcInet6Index, false, !enabled);
-			}
+			ShowHideElements(hDlg,
+				WinCfgConfigSaveSettingsCheckboxIndex,
+				WinCfgConfigSaveSettingsCheckboxStoreIndex,
+				WinCfgMcInetIndex,
+				WinCfgMcInet6Index);
 		#endif
 		}
-		break;
-	};
-
+	}
 	return NetCfgPlugin::psi.DefDlgProc(hDlg, msg, param1, param2);
 }
 
@@ -557,6 +544,8 @@ int PluginCfg::Configure(int itemNumber)
 
 	fdc.SetDefaultButton(offSuffix + WinSuffixOkIndex);
 	fdc.SetFocus(offSuffix + WinSuffixOkIndex);
+
+	fdc.SetHelpTopic(L"Config");
 
 	FarDialog dlg(&fdc, CfgDialogProc, (LONG_PTR)this);
 

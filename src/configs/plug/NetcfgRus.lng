@@ -22,7 +22,7 @@
 "stopdmp"
 "Routing"
 
-"NextRt"
+"SwitchRt"
 "Ipv4"
 "Ipv6"
 "Arp"

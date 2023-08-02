@@ -112,8 +112,9 @@ void FarPanel::GetOpenPluginInfo(struct OpenPluginInfo * info)
 	*info = data->openInfo;
 }
 
-const wchar_t * FarPanel::GetPanelTitle(void) const
+const wchar_t * FarPanel::GetPanelTitle(void)
 {
+	ReloadPanelString(data.get(), index);
 	return data->openInfo.PanelTitle;
 }
 
@@ -142,6 +143,11 @@ const wchar_t * FarPanel::GetPanelTitleKey(int key, unsigned int controlState) c
 	};
 
 	return nullptr;
+}
+
+bool FarPanel::IsPanelProcessKey(int key, unsigned int controlState) const
+{
+	return GetPanelTitleKey(key, controlState) != 0;
 }
 
 void FarPanel::FreeFindData(struct PluginPanelItem * panelItem, int itemsNumber)

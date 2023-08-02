@@ -21,6 +21,7 @@ private:
 	bool change;
 
 	void EditSettings(void);
+	bool SelectActivePanel(void);
 
 	// copy and assignment not allowed
 	NetcfgRoutes(const NetcfgRoutes&) = delete;

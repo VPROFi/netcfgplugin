@@ -40,8 +40,9 @@ public:
 	const wchar_t * DublicateFileSizeString(uint64_t value) const;
 
 	void GetPanelInfo(PanelInfo & pi);
-	const wchar_t * GetPanelTitle(void) const;
+	const wchar_t * GetPanelTitle(void);
 	const wchar_t * GetPanelTitleKey(int key, unsigned int controlState = 0) const;
+	bool IsPanelProcessKey(int key, unsigned int controlState) const;
 
 	PluginPanelItem * GetPanelItem(intptr_t itemNum) const;
 	void FreePanelItem(PluginPanelItem * ppi) const;

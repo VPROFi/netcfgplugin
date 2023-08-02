@@ -55,7 +55,7 @@ int NetcfgTablesRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlS
 			}
 	}
 
-	return GetPanelTitleKey(key, controlState) != 0;
+	return IsPanelProcessKey(key, controlState);
 }
 
 int NetcfgTablesRoute::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber)

@@ -14,20 +14,32 @@ $^#Panel for configuring network interfaces:#
 
   - view information (#name, ip addresses, bytes received/sent, MAC address (+permanent), ipv6 addresses#, etc.) about network interfaces
 
-  - edit information (#name (linux only), ip addresses, MAC address, ipv6 addresses, enable/disable, flags#, etc.) of the network interface
+  - edit (#F4#) information (#name (linux only), ip addresses, MAC address, ipv6 addresses, enable/disable, flags#, etc.) of the network interface
 
-  - save #network interface traffic# to a file
+  - save/stop (#F5#)/(#F6#) #network interface traffic# to a file 
 
+   Plugin use OS command:
+
+  - linux (ip)
+
+  - macos (ifconfig)
 
 @RoutePanel
 $^#Panel for configuring network routes:#
    The panel allows:
 
-  - view information (#ipv4/ipv6, arp, multicast ipv4/ipv6#) about network routes
+  - view information (use (#F6#) for switch) (#ipv4/ipv6, arp, multicast ipv4/ipv6#) about network routes.
 
-  - #view, delete and edit rules# for ipv4/ipv6, multicast ipv4/ipv6 routes (policy routing)
+  - view (#F3#), create (#SHIFT+F4#), delete (#F8#) and edit (#F4#) rules for ipv4/ipv6, multicast ipv4/ipv6 routes (policy routing)
 
-  - remove and edit information about (#ipv4/ipv6, arp#) routes
+  - create (#SHIFT+F4#), remove (#F8#) and edit (#F4#) information about (#ipv4/ipv6, arp#) routes and rules (#F3#)
+
+   Plugin use OS command:
+
+  - linux (ip)
+
+  - macos (route, arp, npd)
+
 
 @Config
 $^#Panel for configuring network interfaces and routes: Configuration#

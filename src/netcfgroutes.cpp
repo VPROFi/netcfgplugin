@@ -113,16 +113,56 @@ void NetcfgRoutes::EditSettings(void)
 	return;
 }
 
+bool NetcfgRoutes::SelectActivePanel(void)
+{
+	static const int menuItems[] = {
+		MPanelNetworkRoutesTitle,
+		MPanelNetworkRoutes6Title,
+		MPanelNetworkRoutesArpTitle
+	};
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	int if_count = ARRAYSIZE(menuItems) + (int)mcinetPanelValid + (int)mcinet6PanelValid, index = 0;
+#else
+	int if_count = ARRAYSIZE(menuItems), index = 0;
+#endif
+	auto menuElements = std::make_unique<FarMenuItem[]>(if_count);
+	memset(menuElements.get(), 0, sizeof(FarMenuItem)*if_count);
+	for( const auto & num : menuItems ) {
+		menuElements[index].Text = GetMsg(num);
+		index++;
+	}
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	if( mcinetPanelValid ) {
+		menuElements[index].Text = GetMsg(MPanelNetworkMcRoutesTitle);
+		index++;
+	}
+
+	if( mcinet6PanelValid ) {
+		menuElements[index].Text = GetMsg(MPanelNetworkMcRoutes6Title);
+		index++;
+	}
+#endif
+
+	if( index ) {
+		menuElements[0].Selected = 1;
+		index = NetCfgPlugin::psi.Menu(NetCfgPlugin::psi.ModuleNumber, -1, -1, 0, FMENU_WRAPMODE|FMENU_AUTOHIGHLIGHT, \
+					 L"Select active panel:", 0, L"hrd", nullptr, nullptr, menuElements.get(), index);
+		if( index >= 0 && index < panels.size() ) {
+			active = (uint32_t)index;
+			return true;
+		}
+	}
+	return false;
+}
+
 int NetcfgRoutes::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState, bool & redraw)
 {
 	if( controlState == 0 ) {
 		switch( key ) {
 		case VK_F6:
-			if( GET_ACTIVE_ROUTE_PANEL() < panels.size() )
-				active++;
-			else
-				active = 0;
-			redraw = true;
+			redraw = SelectActivePanel();
 			return TRUE;
 		case VK_F2:
 			change = true;

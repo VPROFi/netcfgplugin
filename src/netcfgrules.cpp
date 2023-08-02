@@ -599,7 +599,7 @@ int NetcfgIpRule::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState,
 		return TRUE;
 	}
 
-	return GetPanelTitleKey(key, controlState) != 0;
+	return IsPanelProcessKey(key, controlState);
 }
 
 int NetcfgIpRule::GetFindData(struct PluginPanelItem **pPanelItem, int *pItemsNumber)

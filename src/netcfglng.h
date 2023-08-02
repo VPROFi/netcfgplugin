@@ -25,7 +25,7 @@ enum {
 	MF6,
 	MF7,
 
-	MF6Next,
+	MF6Switch,
 	MF6Routes,
 	MF6Routes6,
 	MF6RoutesArp,

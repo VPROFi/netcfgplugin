@@ -1391,7 +1391,7 @@ int NetcfgIpRoute::ProcessKey(HANDLE hPlugin, int key, unsigned int controlState
 		return TRUE;
 	}
 
-	return GetPanelTitleKey(key, controlState) != 0;
+	return IsPanelProcessKey(key, controlState);
 }
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
@@ -1403,7 +1403,6 @@ void NetcfgIpRoute::GetOpenPluginInfo(struct OpenPluginInfo * info)
 		else
 			tables->GetOpenPluginInfo(info);
 		info->PanelTitle = GetPanelTitle();
-		const_cast<struct KeyBarTitles *>(info->KeyBar)->Titles[6-1] = const_cast<wchar_t *>(GetPanelTitleKey(VK_F6));
 		return;
 	}
 

@@ -84,10 +84,10 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"18,14,7,17,0,0", L"18,14,7,17,0,0"},
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes6,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"flags", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"flags", L"expire", 0}},
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes6,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#endif
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesTitle,
@@ -101,10 +101,10 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"29,16,7,17,0,0", L"29,16,7,17,0,0"},
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6RoutesArp,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#else
 		{{L"to", L"via", L"dev", L"prefsrc", L"flags", L"expire", 0}, {L"to", L"via", L"dev", L"prefsrc", L"flags", L"expire", 0}},
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6RoutesArp,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#endif
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutes6Title,
@@ -118,10 +118,10 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"0,18,7,10,9", L"0,18,7,10,9"},
 		#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		{{L"to ip", L"mac", L"dev", L"type", L"state", 0}, {L"to ip", L"mac", L"dev", L"type", L"state", 0}},
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6McRoutes,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#else
 		{{L"to ip", L"mac", L"dev", L"flags", L"state", 0}, {L"to ip", L"mac", L"dev", L"flags", L"state", 0}},
-		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Routes,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MEmptyString,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		#endif
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRoutesArpTitle,
@@ -135,7 +135,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"N,C0,C1,C2,C3,C4", L"N,C0,C1,C2,C3,C4"},
 		{L"18,16,7,17,0,0", L"18,16,7,17,0,0"},
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6McRoutes6,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutesTitle,
 		MFormatNetcfgPanel,
@@ -147,7 +147,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"N,C0,C1,C2,C3,C4", L"N,C0,C1,C2,C3,C4"},
 		{L"29,16,7,17,0,0", L"29,16,7,17,0,0"},
 		{{L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}, {L"to", L"via", L"dev", L"prefsrc", L"proto", L"metric", 0}},
-		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Routes,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MF3Rules,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkMcRoutes6Title,
 		MFormatNetcfgPanel,
@@ -161,7 +161,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"N,C0", L"N,C0"},
 		{L"6,0", L"6,0"},
 		{{L"prio", L"rule", 0}, {L"prio", L"rule", 0}},
-		{0,MF2,MF3Routes,MF4,MEmptyString,MF6Next,MF7Settings,MF8Routes,0,0,0,0},
+		{0,MF2,MF3Routes,MF4,MEmptyString,MF6Switch,MF7Settings,MF8Routes,0,0,0,0},
 		{MEmptyString,MEmptyString,MEmptyString,MF4Create,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRouteRulesTitle,
 		MFormatNetcfgPanel,
@@ -175,7 +175,7 @@ std::map<PanelIndex, CfgDefaults> PluginCfg::def = {\
 		{L"N,C0", L"N,C0"},
 		{L"10,0", L"10,0"},
 		{{L"Table:", L"Total routes:", 0}, {L"Table:", L"Total routes:", 0}},
-		{0,MF2,MF3Rules,MEmptyString,MEmptyString,MF6Next,MF7Settings,MEmptyString,0,0,0,0},
+		{0,MF2,MF3Rules,MEmptyString,MEmptyString,MF6Switch,MF7Settings,MEmptyString,0,0,0,0},
 		{MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString,MEmptyString},
 		MPanelNetworkRouteRulesTitle,
 		MFormatNetcfgPanel,
@@ -224,7 +224,6 @@ void PluginCfg::ReloadPanelString(struct PanelData * data, PanelIndex index)
 
 	data->openInfo.Format=(TCHAR*)GetMsg(cfg.format);
 	data->openInfo.PanelTitle=(TCHAR*)GetMsg(cfg.panelTitle);
-
 }
 
 void PluginCfg::FillPanelData(struct PanelData * data, PanelIndex index)

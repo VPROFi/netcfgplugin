@@ -42,6 +42,8 @@ PYTHON_LIBRARY=$(python3 -c "import distutils.sysconfig as sysconfig; import os;
 cd $BUILD_PATH
 cmake -DUSEUCD=OFF -DPYTHON3=python3 -DPYTHON_EXECUTABLE=python3 -DPYTHON_INCLUDE_DIRS=$PYTHON_INCLUDE_DIRS -DPYTHON_LIBRARY=$PYTHON_LIBRARY -DCMAKE_INSTALL_PREFIX="/home/$USER/far2l" -DUSEWX=yes -DPYTHON=yes -DPACKAGE_DEPENDENCIES="$libxerces" -DCMAKE_BUILD_TYPE=Release "$PWD_PATH"
 make -j$(nproc --all)
+make -j$(nproc --all) install
+/home/$USER/far2l/bin/far2l 
 ```
 
 The plugin allows (linux and macos):

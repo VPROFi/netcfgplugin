@@ -289,6 +289,9 @@ FarDialog::FarDialog(FarDlgConstructor * data, FARWINDOWPROC dlgProc, LONG_PTR p
 FarDialog::~FarDialog()
 {
 	LOG_INFO("\n");
+	if( hDlg )
+		Plugin::psi.DialogFree(hDlg);
+	hDlg = nullptr;
 }
 
 int FarDialog::Run(void)

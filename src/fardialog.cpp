@@ -290,7 +290,7 @@ FarDialog::~FarDialog()
 {
 	LOG_INFO("\n");
 	if( hDlg != INVALID_HANDLE_VALUE )
-		Plugin::psi.DialogFree(hDlg);
+		NetCfgPlugin::psi.DialogFree(hDlg);
 }
 
 int FarDialog::Run(void)

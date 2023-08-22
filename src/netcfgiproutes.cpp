@@ -1412,11 +1412,13 @@ void NetcfgIpRoute::FreeFindData(struct PluginPanelItem * panelItem, int itemsNu
 		return;
 	}
 
-	FarPanel::FreeFindData(panelItem, itemsNumber);
-	while( itemsNumber-- ) {
-		if( (panelItem+itemsNumber)->FindData.dwFileAttributes & FILE_FLAG_DELETE_ON_CLOSE )
-			free((void *)(panelItem+itemsNumber)->FindData.lpwszFileName);
+	auto freeNumber = itemsNumber;
+	while( freeNumber-- ) {
+		if( (panelItem+freeNumber)->FindData.dwFileAttributes & FILE_FLAG_DELETE_ON_CLOSE )
+			free((void *)(panelItem+freeNumber)->FindData.lpwszFileName);
 	}
+
+	FarPanel::FreeFindData(panelItem, itemsNumber);
 }
 #endif
 
